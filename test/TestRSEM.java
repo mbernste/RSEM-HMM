@@ -4,10 +4,6 @@ import pair.Pair;
 
 import common.Common;
 
-import data.Read;
-import data.SimulatedReads;
-import data.Transcript;
-import data.Transcripts;
 import data.readers.Alignments;
 import data.readers.FASTAReader;
 import data.readers.SAMReader;
@@ -15,6 +11,10 @@ import applications.RSEM;
 import rsem.model.ExpectedHiddenData;
 import rsem.model.ExpressionLevels;
 import rsem.model.no_indels.SubstitutionMatrix;
+import sequence.Read;
+import sequence.SimulatedReads;
+import sequence.Transcript;
+import sequence.Transcripts;
 
 
 public class TestRSEM 

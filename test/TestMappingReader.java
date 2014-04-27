@@ -1,12 +1,13 @@
 import java.io.File;
 
+import sequence.Sequence;
+import sequence.SimulatedReads;
+import sequence.Transcripts;
+
 import applications.RSEM;
 
 import common.FileWriter;
 
-import data.Sequence;
-import data.SimulatedReads;
-import data.Transcripts;
 import data.readers.FASTAReader;
 import data.readers.MappingReader;
 import data.simulation.ReadSimulator;

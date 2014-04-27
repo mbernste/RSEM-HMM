@@ -1,8 +1,8 @@
 import rsem.model.ExpressionLevels;
 import rsem.model.no_indels.SubstitutionMatrix;
+import sequence.Sequence;
+import sequence.Transcripts;
 import common.Common;
-import data.Sequence;
-import data.Transcripts;
 
 
 public class TestCommon 

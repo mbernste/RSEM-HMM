@@ -4,10 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import sequence.Reads;
+import sequence.Transcripts;
+
 import common.Common;
 
-import data.Reads;
-import data.Transcripts;
 
 public class ExpectedHiddenData 
 {

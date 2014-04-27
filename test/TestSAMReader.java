@@ -1,13 +1,13 @@
 import java.io.File;
 
-import data.Sequence;
-import data.SimulatedReads;
-import data.Transcripts;
 import data.readers.Alignments;
 import data.readers.FASTAReader;
 import data.readers.SAMReader;
 
 import rsem.model.ExpectedHiddenData;
+import sequence.Sequence;
+import sequence.SimulatedReads;
+import sequence.Transcripts;
 import applications.RSEM;
 
 

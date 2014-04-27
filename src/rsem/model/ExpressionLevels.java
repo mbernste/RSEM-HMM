@@ -4,10 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import sequence.Sequence;
+import sequence.Transcripts;
+
 import common.Common;
 
-import data.Sequence;
-import data.Transcripts;
 
 public class ExpressionLevels 
 {	 

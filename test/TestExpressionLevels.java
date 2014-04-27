@@ -1,5 +1,5 @@
 import rsem.model.ExpressionLevels;
-import data.Transcripts;
+import sequence.Transcripts;
 
 
 public class TestExpressionLevels 

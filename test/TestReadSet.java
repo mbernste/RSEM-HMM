@@ -1,8 +1,8 @@
-import data.Read;
-import data.Reads;
-import data.Sequence;
-import data.SimulatedReads;
-import data.Transcripts;
+import sequence.Read;
+import sequence.Reads;
+import sequence.Sequence;
+import sequence.SimulatedReads;
+import sequence.Transcripts;
 import data.simulation.ReadSimulator;
 
 

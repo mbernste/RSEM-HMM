@@ -1,9 +1,9 @@
 import rsem.model.no_indels.SubstitutionMatrix;
+import sequence.SequenceCollection;
+import sequence.Transcripts;
 
 import common.Common;
 
-import data.SequenceCollection;
-import data.Transcripts;
 import data.readers.FASTAReader;
 
 

@@ -1,4 +1,4 @@
-import data.Transcripts;
+import sequence.Transcripts;
 import data.readers.FASTAReader;
 
 

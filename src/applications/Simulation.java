@@ -5,11 +5,11 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 
 import pair.Pair;
+import sequence.SimulatedReads;
+import sequence.Transcripts;
 
 import common.FileWriter;
 
-import data.SimulatedReads;
-import data.Transcripts;
 import data.readers.FASTAReader;
 import data.simulation.ReadSimulator;
 

@@ -4,6 +4,6 @@ bin
 .settings
 .classpath
 .project
-data
+data/
 results
 *.class
