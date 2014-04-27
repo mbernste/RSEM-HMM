@@ -106,12 +106,12 @@ public class TestRSEM
 		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts);		
 		
 		ExpressionLevels el = TestCommon.buildDummyExpressionLevels(ts);
-		System.out.println(el);
+		System.out.println("\n ------- EXPRESSION LEVELS -------\n" + el);
 		
 		ExpectedHiddenData z = RSEM.eStep(rs, ts, cAligns, el, pM);
 		System.out.println(z);
 		Pair<ExpressionLevels, SubstitutionMatrix> params = RSEM.mStep(rs, ts, z);
-		System.out.println(params.getFirst());
+		//System.out.println(params.getFirst());
 	}
 	
 }

@@ -1,1 +1,9 @@
 ~/Development/bowtie2-2.2.1/bowtie2 --local --score-min G,0,8 -k 10 -x NM -U ./../../../output/out_short_10.fq -S bowtie_output_10.txt
+
+
+
+
+
+Run local alignment with maximum 10 matches output
+
+~/Development/bowtie2-2.2.1/bowtie2 --local -k 10 -x NM_small -U ./../../../output/out_small_25.fq -S bowtie_small_25.txt

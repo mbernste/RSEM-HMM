@@ -28,7 +28,6 @@ public class TestCommon
 			el.setExpressionLevel(s.getId(), count++);
 		}
 		el.normalize();
-		System.out.println(el);
 		return el;
 	}
 }

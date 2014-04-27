@@ -188,8 +188,15 @@ public class ExpectedHiddenData
 		public double countAlignedBasePairs(char rSymbol, char tSymbol, int pos)
 		{
 			double sum = 0.0;
-			// TODO THIS!
-			//readToIJK.values();
+			for (Entry<String, IJK> e : readToIJK.entrySet())
+			{
+				String rId = e.getKey();
+				//System.out.println("Read " + rId + ":\t\t\t" + rs.getRead(rId).getSeq());
+				sum += e.getValue().countAlignedBasePairs(rId, 
+														  rSymbol, 
+														  tSymbol, 
+														  pos);
+			}
 			return sum;
 		}
 		
@@ -218,7 +225,8 @@ public class ExpectedHiddenData
 	public class IJK
 	{
 		/**
-		 * Maps a transcript to data structure that stores position 
+		 * Maps a transcript ID to data structure that stores the start
+		 * position of the alignment
 		 */
 		private Map<String, JK> transcriptToJK;
 
@@ -284,6 +292,24 @@ public class ExpectedHiddenData
 			if ( transcriptToJK.get(tId) != null)
 				return transcriptToJK.get(tId).sumAllValues();
 			else return 0.0;
+		}
+		
+		public double countAlignedBasePairs(String rId,
+											char rSymbol, 
+										    char tSymbol,
+										    int rPos)
+		{
+			double sum = 0.0;
+			for (Entry<String, JK> e : transcriptToJK.entrySet())
+			{
+				String tId = e.getKey();
+				sum += e.getValue().countAlignedBasePairs(rId,
+														  tId,
+														  rSymbol, 
+														  tSymbol,
+														  rPos);
+			}
+			return sum;
 		}
 		
 		@Override
@@ -357,6 +383,32 @@ public class ExpectedHiddenData
 			{
 				dataEntry.normalizeBy(value);
 			}
+		}
+		
+		public double countAlignedBasePairs(String rId,
+											String tId,
+											char rSymbol, 
+											char tSymbol,
+											int rPos)
+		{
+			double sum = 0.0;
+			for (Entry<Integer, K> e : positionToOrientation.entrySet())
+			{
+				int tPos = e.getKey();
+				
+				/*
+				 * We only want to sum alignment values for which the symbol 
+				 * in the read and transcript are the target base pairs
+				 */
+				if (rs.getSequence(rId).getSeq().charAt(rPos) == rSymbol &&	
+					ts.getSequence(tId).getSeq().charAt(tPos + rPos - 1) == tSymbol)
+				{
+					System.out.println("Read " + rId + ":\t\t\t" + rs.getRead(rId).getSeq());
+					System.out.println("Tran " + tId + ":\t\t" + ts.getTranscript(tId).getSeq().substring(tPos - 1, tPos + Common.READ_LENGTH - 1));
+					sum += e.getValue().sumAllValues();
+				}
+			}
+			return sum;
 		}
 
 		@Override
@@ -437,11 +489,9 @@ public class ExpectedHiddenData
 		public void normalizeBy(double value)
 		{
 			if (orientationToProbability[FORWARD] != null)
-				System.out.println("Dividing " + orientationToProbability[FORWARD] + " by " + value);
 				orientationToProbability[FORWARD] /= value;
 			
 			if (orientationToProbability[REVERSE_COMPLIMENT] != null)
-
 				orientationToProbability[REVERSE_COMPLIMENT] /= value;
 		}
 		
