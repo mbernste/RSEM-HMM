@@ -1,0 +1,128 @@
+package rsem.model.no_indels;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import common.Common;
+
+
+public class SubstitutionMatrix 
+{	
+	private Map<Character, Integer> symbolIndices;
+	
+	/**
+	 * Index 0: Position in the read
+	 * Index 1: Symbol in the read
+	 * Index 2: Aligned symbol in the transcript
+	 */
+	private Double[][][] values;
+		
+	public SubstitutionMatrix()
+	{
+		symbolIndices = new HashMap<Character, Integer>();
+		for (int i = 0; i < Common.DNA_ALPHABET.length; i++)
+		{
+			symbolIndices.put(Common.DNA_ALPHABET[i], i);
+		}
+		
+		int rLength = Common.READ_LENGTH;
+		int aLength = Common.DNA_ALPHABET.length;
+		values = new Double[rLength][aLength][aLength];
+		for (int p = 0; p < rLength; p++)
+		{
+			for (int r = 0; r < aLength; r++)
+			{
+				for (int t = 0; t < aLength; t++)
+				{
+					values[p][r][t] = 0.0;
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Get the value for substitution at target position of the 
+	 * read
+	 * 
+	 * @param rSymbol the symbol on the read
+	 * @param tSymbol the symbol on the transcript
+	 * @param position the position of the read for the substitution we are 
+	 * examining
+	 * @return the value of the given substitution at the target position
+	 * of the read
+	 */
+	public double getValue(int position,
+						   Character rSymbol,
+						   Character tSymbol)
+	{
+		int row = symbolIndices.get(rSymbol);
+		int col = symbolIndices.get(tSymbol);
+		return values[position][row][col];
+	}
+	
+	/**
+	 * Set the value for substitution at target position of the read
+	 * 
+	 * @param rSymbol the symbol on the read
+	 * @param tSymbol the symbol on the transcript
+	 * @param position the position of the read for the substitution we are 
+	 * examining
+	 */
+	public void setValue(Character rSymbol,
+			   			 Character tSymbol,
+			   			 int position,
+			   			 double value)
+	{
+		int row = symbolIndices.get(rSymbol);
+		int col = symbolIndices.get(tSymbol);
+		values[position][row][col] = value;
+	}
+	
+	public void normalize()
+	{
+		for (int p = 0; p < Common.READ_LENGTH; p++)
+		{
+			for (int t = 0; t < Common.DNA_ALPHABET.length; t++)
+			{
+				double sum = 0.0;
+				
+				for (int r = 0; r < Common.DNA_ALPHABET.length; r++)
+				{
+					sum += values[p][r][t];
+				}
+				
+				for (int r = 0; r < Common.DNA_ALPHABET.length; r++)
+				{
+					values[p][r][t] /= sum;
+				}
+			}
+		}
+	}
+	
+	@Override
+	public String toString()
+	{
+		String str = " ------------ ";
+		
+		int rLength = Common.READ_LENGTH;
+		for (int p = 0; p < rLength; p++)
+		{
+			str += "\n** Position " + p + " **\n";
+			for (char rSymbol : Common.DNA_ALPHABET)
+			{
+				int r = symbolIndices.get(rSymbol);
+				for (char tSymbol : Common.DNA_ALPHABET)
+				{
+					int c = symbolIndices.get(tSymbol);
+					str += "(" + rSymbol + ", " + tSymbol + ") : " + 
+							values[p][r][c] + "\n";			
+				}
+			}			
+		}
+		
+		str += "------------\n";
+		
+		return str;
+	}
+
+}

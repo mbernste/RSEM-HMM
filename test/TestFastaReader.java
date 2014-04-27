@@ -1,5 +1,5 @@
-import data.readers.FastaReader;
-import data.transcript.TranscriptSet;
+import data.Transcripts;
+import data.readers.FASTAReader;
 
 
 public class TestFastaReader 
@@ -11,7 +11,7 @@ public class TestFastaReader
 
 	public static void readTranscriptsInMemory()
 	{
-		TranscriptSet ts = FastaReader.readTranscripts("./data/NM_refseq_ref.transcripts_short.fa");
+		Transcripts ts = Core.getSmallTranscriptSet();
 		for (int i = 0; i < 4; i++)
 		{
 			System.out.println(ts.getTranscript(i));

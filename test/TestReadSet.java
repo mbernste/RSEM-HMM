@@ -1,25 +1,45 @@
-import data.reads.Read;
-import data.reads.ReadSet;
+import data.Read;
+import data.Reads;
+import data.Sequence;
+import data.SimulatedReads;
+import data.Transcripts;
 import data.simulation.ReadSimulator;
-import data.transcript.TranscriptSet;
 
 
 public class TestReadSet 
 {
 	public static void main(String[] args)
 	{
-		testSimulateReads();
+		//testSimulateReads();
+		testSimulatedReads();
+		//testFastaFormat();
 	}
 	
 	public static void testSimulateReads()
 	{
-		TranscriptSet ts =  TestCommon.getSmallTranscriptSet();
-		ReadSet rs = ReadSimulator.simulateReadsAllUniform(ts, 5);
+		Transcripts ts =  Core.getSmallTranscriptSet();
+		Reads rs = ReadSimulator.simulateReadsAllUniform(ts, 5);
 		
-		for (Read r : rs.getReads())
+		for (Sequence r : rs.getSequences())
 		{
 			System.out.println(r);
 		}
+	}
+	
+	public static void testSimulatedReads()
+	{
+		Transcripts ts =  Core.getSmallTranscriptSet();
+		SimulatedReads rs = ReadSimulator.simulateReadsAllUniform(ts, 5);
+		
+		System.out.println(rs.mapping());
+	}
+	
+	public static void testFastaFormat()
+	{
+		Transcripts ts =  Core.getSmallTranscriptSet();
+		Reads rs = ReadSimulator.simulateReadsAllUniform(ts, 5);
+		
+		System.out.println(rs.fastaFormat());
 	}
 
 }
