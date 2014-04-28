@@ -1,6 +1,6 @@
 RSEM
 ====
-This project implements the RNA-Seq Expectation Maximization algorithm
+This project implements a simplified version of the RNA-Seq Expectation Maximization algorithm
 devised by Bo Li and Colin Dewey for estimating gene and
 isophorm expression levels in RNA-Seq data.
 
