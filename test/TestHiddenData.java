@@ -87,10 +87,13 @@ public class TestHiddenData
 		Transcript t = ts.getTranscript(3);
 		System.out.println(t.getId());
 		
-		char rSymbol = 'A';
-		char tSymbol = 'A';
-		double sum = z.countAlignedBasePairs(rSymbol, tSymbol, 1);
+		char rSymbol = 'G';
+		char tSymbol = 'G';
+		double sum = z.countAlignedBasePairs(rSymbol, tSymbol, 3);
 		System.out.println("SUM OVER PAIR R='" + rSymbol + "', T='" + tSymbol + "': " + sum);
+		
+		sum = z.countTranscriptBaseOccurrences(tSymbol, 3);
+		System.out.println("SUM TRANSCRIPT OCCURRENCES T='" + tSymbol + "': " + sum);
 	}
 	
 }

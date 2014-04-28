@@ -1,8 +1,8 @@
 package applications;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.Scanner;
+import java.util.HashMap;
+import java.util.Map;
 
 import common.Common;
 
@@ -14,7 +14,6 @@ import rsem.model.no_indels.SubstitutionMatrix;
 import sequence.Read;
 import sequence.Reads;
 import sequence.Sequence;
-import sequence.SimulatedRead;
 import sequence.SimulatedReads;
 import sequence.Transcript;
 import sequence.Transcripts;
@@ -26,8 +25,10 @@ import data.readers.SAMReader;
 
 public class RSEM 
 {
+	private static int debug = 1;
+	
 	private static final double EPSILON = 0.001;
-
+	
 	public static void main(String[] args)
 	{
 		SimulatedReads reads = FASTAReader.readSimulatedReads(args[0]);
@@ -41,15 +42,15 @@ public class RSEM
 															  transcripts);
 	}
 	
-	public static void EM( Reads rs,
-						   Transcripts ts,
-						   Alignments cAligns)
-	{
-		//Pair<Motif, MotifLocations> result = new Pair<Motif, MotifLocations>();
-		
+	public static ExpressionLevels EM( Reads rs,
+						   			   Transcripts ts,
+						   			   Alignments cAligns,
+						   			   ExpressionLevels pEl,
+						   			   SubstitutionMatrix pM) // TODO INITILIZE PARAMS ELSEWHERE
+	{	
 		ExpectedHiddenData z = null;
-		ExpressionLevels pEl = new ExpressionLevels(ts);
-		SubstitutionMatrix pM = new SubstitutionMatrix();
+		//ExpressionLevels pEl = new ExpressionLevels(ts);
+		//SubstitutionMatrix pM = new SubstitutionMatrix();
 		
 		/*
 		 *  Repeat E-Step & M-Step until convergence
@@ -63,6 +64,7 @@ public class RSEM
 			 * E-Step
 			 */
 			z = eStep(rs, ts, cAligns, pEl, pM);
+			//System.out.println(z);
 			
 			/*
 			 * M-Step
@@ -72,13 +74,13 @@ public class RSEM
 			pM = params.getSecond();
 		
 			prevProbData = probData;
-			//probData = probabilityOfData(reads, params, hiddenData);			
+			probData = probabilityOfData(rs, ts, cAligns, z, pEl, pM);	
+			
+			if (debug > 0)
+				System.out.println("Current probability of data: " + probData);
 		}
 
-		//result.setFirst(p);
-		//result.setSecond(z);
-		
-		//return result;
+		return pEl;
 	}
 	
 	public static ExpectedHiddenData eStep(Reads rs, 
@@ -133,32 +135,34 @@ public class RSEM
 			double sumOverT = z.sumOverTranscript(tId);
 			pEl.setExpressionLevel(tId, sumOverT / rs.size());
 		}
+		// TODO REMOVE
+		//System.out.println(pEl);
 		
 		/*
-		 *  Count occurrences of each pair of bases at each position along the
-		 *  read.
+		 *  Count occurrences of each pair of bases aligned at each position 
+		 *  of the read.  Also, count occurrence of each base appearing
+		 *  along the transcript where there is a read aligned. 
 		 */
+		SubstitutionMatrix pM = new SubstitutionMatrix();
 		double sum = 0.0;
 		for (int p = 0; p < Common.READ_LENGTH; p++)
 		{
 			for (char t : Common.DNA_ALPHABET)
 			{
+				double total = z.countTranscriptBaseOccurrences(t, p);
+				
 				for (char r : Common.DNA_ALPHABET)
 				{
-					z.countAlignedBasePairs(r, t, p);
+					double numPairs = z.countAlignedBasePairs(r, t, p);
+					pM.setValue(r, t, p, (numPairs + 1) / (total + 4));
 				}
-				
-				z.countTranscriptBaseOccurrences(t, p);
 			}
 		}
 		
-		/*
-		 * Count the occurrences of each base in the transcript
-		 */
-		// TODO THIS
-		
-		// TODO RETURN SUB MATRIX
-		return new Pair<ExpressionLevels, SubstitutionMatrix>(pEl, null);
+		// TODO REMOVE
+		//System.out.println(pM);
+				
+		return new Pair<ExpressionLevels, SubstitutionMatrix>(pEl, pM);
 	}
 	
 	public static double probabilityOfSequence(Read r, 
@@ -201,17 +205,49 @@ public class RSEM
 		return p;
 	}
 	
-	private double probabilityOfData(Reads reads, 
+	private static double probabilityOfData(
+									 Reads rs, 
 									 Transcripts ts,
+									 Alignments cAligns,
 									 ExpectedHiddenData z,
 									 ExpressionLevels pEl,
 									 SubstitutionMatrix pM)
 	{
+		/*
+		 * Map that will be used to store all
+		 * partial computations of each sequence when calculating the total 
+		 * probability of the data.
+		 */
+		Map<String, Double> pSequences = new HashMap<String, Double>();
+		for (Sequence s : rs.getSequences())
+		{
+			pSequences.put(s.getId(), 0.0);
+		}
+		
 		double p = 1.0;
 		
-		for (Sequence r : reads.getSequences())
+		for (Object[] o : cAligns.getAlignments())
 		{
-			// TODO CALCULATE THIS SHIT
+			String readId = (String) o[0];
+			String transId = (String) o[1];
+			Integer startPos = (Integer) o[2];
+			Boolean orientation = (Boolean) o[3];
+			
+			double pSequence = probabilityOfSequence(rs.getRead(readId), 
+					 ts.getTranscript(transId),
+					 startPos,
+					 orientation,
+					 pM);	
+			
+			double zVal = z.getValue(readId, transId, startPos, orientation);
+			double partialCalculation = pSequence * zVal;
+			
+			pSequences.put(readId, pSequences.get(readId) + partialCalculation);
+		}
+		
+		for (Double val : pSequences.values())
+		{
+			p += -Math.log(val);
 		}
 		
 		return p;

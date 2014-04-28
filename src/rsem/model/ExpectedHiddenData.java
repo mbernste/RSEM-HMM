@@ -12,6 +12,8 @@ import common.Common;
 
 public class ExpectedHiddenData 
 {
+	private static int debug = 0;
+	
 	/**
 	 * The data structure for storing all of the probability values
 	 */
@@ -191,7 +193,6 @@ public class ExpectedHiddenData
 			for (Entry<String, IJK> e : readToIJK.entrySet())
 			{
 				String rId = e.getKey();
-				//System.out.println("Read " + rId + ":\t\t\t" + rs.getRead(rId).getSeq());
 				sum += e.getValue().countAlignedBasePairs(rId, 
 														  rSymbol, 
 														  tSymbol, 
@@ -204,7 +205,11 @@ public class ExpectedHiddenData
 		{
 			double sum = 0.0;
 			
-			// TODO: THIS!!!
+			for (Entry<String, IJK> e : readToIJK.entrySet())
+			{
+				sum += e.getValue().countTranscriptBaseOccurrences(tSymbol, 
+														  		   pos);
+			}
 			
 			return sum;
 		}
@@ -312,6 +317,19 @@ public class ExpectedHiddenData
 			return sum;
 		}
 		
+		public double countTranscriptBaseOccurrences(char tSymbol, int pos)
+		{
+			double sum = 0.0;
+			for (Entry<String, JK> e : transcriptToJK.entrySet())
+			{
+				String tId = e.getKey();
+				sum += e.getValue().countTranscriptBaseOccurrences(tId,
+																   tSymbol, 
+																   pos);
+			}
+			return sum;
+		}
+		
 		@Override
 		public String toString()
 		{
@@ -403,14 +421,44 @@ public class ExpectedHiddenData
 				if (rs.getSequence(rId).getSeq().charAt(rPos) == rSymbol &&	
 					ts.getSequence(tId).getSeq().charAt(tPos + rPos - 1) == tSymbol)
 				{
-					System.out.println("Read " + rId + ":\t\t\t" + rs.getRead(rId).getSeq());
-					System.out.println("Tran " + tId + ":\t\t" + ts.getTranscript(tId).getSeq().substring(tPos - 1, tPos + Common.READ_LENGTH - 1));
+					if (debug > 1)
+					{
+						System.out.println("Read " + rId + ":\t\t\t" 
+											+ rs.getRead(rId).getSeq());
+						System.out.println("Tran " + tId + ":\t\t" 
+											+ ts.getTranscript(tId).getSeq().substring(tPos - 1, tPos + Common.READ_LENGTH - 1));
+					}
+					
 					sum += e.getValue().sumAllValues();
+				}
+			}
+			
+			return sum;
+		}
+
+		public double countTranscriptBaseOccurrences(String tId, 
+													 char tSymbol, 
+													 int rPos)
+		{
+			double sum = 0.0;
+			for (Entry<Integer, K> e : positionToOrientation.entrySet())
+			{
+				int tPos = e.getKey();
+				if (ts.getSequence(tId).getSeq().charAt(rPos + tPos - 1) == tSymbol)
+				{					
+					double s = e.getValue().sumAllValues();	
+					sum += s;
+					
+					if (debug > 1)
+						System.out.println("Tran " + tId + ":\t\t" + 
+									ts.getTranscript(tId).getSeq().substring(tPos - 1, tPos + Common.READ_LENGTH - 1) 
+									+ " --> " + s);
 				}
 			}
 			return sum;
 		}
-
+					
+		
 		@Override
 		public String toString()
 		{
@@ -478,10 +526,13 @@ public class ExpectedHiddenData
 			double sum = 0.0;
 			
 			if (orientationToProbability[FORWARD] != null)
+			{
 				sum += orientationToProbability[FORWARD];
-			
+			}
 			if (orientationToProbability[REVERSE_COMPLIMENT] != null)
+			{
 				sum += orientationToProbability[REVERSE_COMPLIMENT];
+			}
 			
 			return sum;
 		}
