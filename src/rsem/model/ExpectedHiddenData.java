@@ -12,7 +12,7 @@ import common.Common;
 
 public class ExpectedHiddenData 
 {
-	private static int debug = 0;
+	private static int debug = 2;
 	
 	/**
 	 * The data structure for storing all of the probability values
@@ -396,7 +396,6 @@ public class ExpectedHiddenData
 		
 		public void normalizeBy(double value)
 		{
-			double sum = 0.0;
 			for (K dataEntry : positionToOrientation.values())
 			{
 				dataEntry.normalizeBy(value);
@@ -417,16 +416,18 @@ public class ExpectedHiddenData
 				/*
 				 * We only want to sum alignment values for which the symbol 
 				 * in the read and transcript are the target base pairs
+				 * 
+				 * ts.getSequence(tId).getSeq().charAt(tPos + rPos - 1) == tSymbol)
 				 */
 				if (rs.getSequence(rId).getSeq().charAt(rPos) == rSymbol &&	
-					ts.getSequence(tId).getSeq().charAt(tPos + rPos - 1) == tSymbol)
-				{
+					ts.getSequence(tId).getSeq().charAt(tPos + rPos) == tSymbol)
+				{					
 					if (debug > 1)
 					{
 						System.out.println("Read " + rId + ":\t\t\t" 
 											+ rs.getRead(rId).getSeq());
 						System.out.println("Tran " + tId + ":\t\t" 
-											+ ts.getTranscript(tId).getSeq().substring(tPos - 1, tPos + Common.READ_LENGTH - 1));
+											+ ts.getTranscript(tId).getSeq().substring(tPos, tPos + Common.READ_LENGTH));
 					}
 					
 					sum += e.getValue().sumAllValues();
@@ -540,10 +541,14 @@ public class ExpectedHiddenData
 		public void normalizeBy(double value)
 		{
 			if (orientationToProbability[FORWARD] != null)
-				orientationToProbability[FORWARD] /= value;
+			{
+				orientationToProbability[FORWARD] /= value;				
+			}
 			
 			if (orientationToProbability[REVERSE_COMPLIMENT] != null)
+			{
 				orientationToProbability[REVERSE_COMPLIMENT] /= value;
+			}
 		}
 		
 		@Override

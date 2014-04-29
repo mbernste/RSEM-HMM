@@ -29,6 +29,7 @@ public class RSEM
 	
 	private static final double EPSILON = 0.001;
 	
+	/*
 	public static void main(String[] args)
 	{
 		SimulatedReads reads = FASTAReader.readSimulatedReads(args[0]);
@@ -40,7 +41,7 @@ public class RSEM
 		Alignments aligns = SAMReader.readCandidateAlignments(samFile, 
 															  reads,
 															  transcripts);
-	}
+	}*/
 	
 	public static ExpressionLevels EM( Reads rs,
 						   			   Transcripts ts,
@@ -57,9 +58,9 @@ public class RSEM
 		 */
 		double probData = 1.0;
 		double prevProbData = 0.0;
-		while (Math.abs(probData - prevProbData) > EPSILON)
+		//while (Math.abs(probData - prevProbData) > EPSILON)
+		for (int i = 0; i < 20; i++)
 		{
-			
 			/*
 			 * E-Step
 			 */
@@ -108,7 +109,8 @@ public class RSEM
 			 *  Multiply probability of sequence by the expression level of the
 			 *  reference transcript it is aligned to
 			 */
-			double finalP = pSequence * pEl.getExpressionLevel(transId);
+			double finalP = pSequence * (pEl.getExpressionLevel(transId) / 
+										 ts.getSequence(transId).length());
 			
 			z.setValue(readId, transId, startPos, orientation, finalP);
 		}
@@ -170,7 +172,9 @@ public class RSEM
 										 int startPos,
 										 boolean orientation,
 										 SubstitutionMatrix pM)
-	{
+	{		
+		//System.out.println(r.getSeq());
+		//System.out.println(t.getSeq().subSequence(startPos, startPos + Common.READ_LENGTH) + "\n");
 		
 		// Total probability of sequence
 		double p = 1.0;

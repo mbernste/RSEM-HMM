@@ -9,7 +9,7 @@ public class Common
 	public static final boolean FORWARD_ORIENTATION = true;
 	public static final boolean REVERSE_COMPLIMENT_ORIENTATION = false;
 	
-	public static final int READ_LENGTH = 25;
+	public static final int READ_LENGTH = 5;
 	
 	public static final char[] DNA_ALPHABET = {'A', 'T', 'C', 'G'};
 	
