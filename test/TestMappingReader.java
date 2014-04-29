@@ -1,17 +1,17 @@
 import java.io.File;
 
+import rsem.model.ExpressionLevels;
 import sequence.Sequence;
 import sequence.SimulatedReads;
 import sequence.Transcripts;
 
 import applications.RSEM;
+import applications.Simulation;
 
 import common.FileWriter;
 
 import data.readers.FASTAReader;
 import data.readers.MappingReader;
-import data.simulation.ReadSimulator;
-
 
 public class TestMappingReader 
 {
@@ -33,7 +33,8 @@ public class TestMappingReader
   								Core.MAP_EXT;
 		
 		Transcripts ts = Core.getSmallTranscriptSet();
-		SimulatedReads rs = ReadSimulator.simulateReadsAllUniform(ts, 20);
+		ExpressionLevels el = new ExpressionLevels(ts);
+		SimulatedReads rs = Simulation.simulateReads(ts, el, 20);
 		
 		File fastaFile = new File(readsFName);
 		FileWriter.writeToFile(fastaFile, rs.fastaFormat());

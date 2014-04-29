@@ -1,3 +1,4 @@
+import rsem.model.ExpressionLevels;
 import sequence.Transcripts;
 import applications.Simulation;
 
@@ -12,6 +13,7 @@ public class testSimulation
 	public static void testGenerateExpressionLevels()
 	{
 		Transcripts ts = Core.getSmallTranscriptSet();
-		Simulation.generateExpressionLevels(ts);
+		ExpressionLevels el = Simulation.generateExpressionLevels(ts);
+		System.out.println(el);
 	}
 }

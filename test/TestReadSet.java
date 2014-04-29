@@ -1,10 +1,10 @@
+import applications.Simulation;
+import rsem.model.ExpressionLevels;
 import sequence.Read;
 import sequence.Reads;
 import sequence.Sequence;
 import sequence.SimulatedReads;
 import sequence.Transcripts;
-import data.simulation.ReadSimulator;
-
 
 public class TestReadSet 
 {
@@ -18,7 +18,8 @@ public class TestReadSet
 	public static void testSimulateReads()
 	{
 		Transcripts ts =  Core.getSmallTranscriptSet();
-		Reads rs = ReadSimulator.simulateReadsAllUniform(ts, 5);
+		ExpressionLevels el = new ExpressionLevels(ts);
+		Reads rs = Simulation.simulateReads(ts, el, 5);
 		
 		for (Sequence r : rs.getSequences())
 		{
@@ -29,7 +30,8 @@ public class TestReadSet
 	public static void testSimulatedReads()
 	{
 		Transcripts ts =  Core.getSmallTranscriptSet();
-		SimulatedReads rs = ReadSimulator.simulateReadsAllUniform(ts, 5);
+		ExpressionLevels el = new ExpressionLevels(ts);
+		SimulatedReads rs = Simulation.simulateReads(ts, el, 5);
 		
 		System.out.println(rs.mapping());
 	}
@@ -37,7 +39,8 @@ public class TestReadSet
 	public static void testFastaFormat()
 	{
 		Transcripts ts =  Core.getSmallTranscriptSet();
-		Reads rs = ReadSimulator.simulateReadsAllUniform(ts, 5);
+		ExpressionLevels el = new ExpressionLevels(ts);
+		Reads rs = Simulation.simulateReads(ts, el, 5);
 		
 		System.out.println(rs.fastaFormat());
 	}

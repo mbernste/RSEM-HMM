@@ -14,7 +14,6 @@ import sequence.Transcripts;
 import data.readers.Alignments;
 import data.readers.FASTAReader;
 import data.readers.SAMReader;
-import data.simulation.ReadSimulator;
 
 public class TestHiddenData 
 {
