@@ -16,6 +16,10 @@ public class Transition
 	
 	/**
 	 * Constructor
+	 * 
+	 * @param originId ID of the origin state
+	 * @param destinationId ID of the destination state
+	 * @param probability probability of taking that transition
 	 */
 	public Transition(String originId, String destinationId, double probability)
 	{

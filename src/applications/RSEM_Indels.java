@@ -4,10 +4,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import common.Common;
-
 import pair.Pair;
-
 import rsem.model.ExpectedHiddenData;
 import rsem.model.ExpressionLevels;
 import rsem.model.no_indels.SubstitutionMatrix;
@@ -18,34 +15,22 @@ import sequence.SimulatedReads;
 import sequence.Transcript;
 import sequence.Transcripts;
 
+import common.Common;
+
 import data.readers.Alignments;
 import data.readers.FASTAReader;
 import data.readers.MappingReader;
 import data.readers.SAMReader;
 
-public class RSEM 
+public class RSEM_Indels 
 {
-	private static int debug = 1;
+private static int debug = 1;
 	
 	private static final double EPSILON = 0.001;
 	
 	public static void main(String[] args)
 	{	
-		SimulatedReads reads = FASTAReader.readSimulatedReads(args[0]);
-		MappingReader.recoverMapping(args[1], reads);
 		
-		Transcripts transcripts = FASTAReader.readTranscripts(args[2]);
-
-		File samFile = new File(args[1]);
-		Alignments aligns = SAMReader.readCandidateAlignments(samFile, 
-															  reads,
-															  transcripts);
-		
-		/*
-		ExpressionLevels el = TestCommon.buildDummyExpressionLevels(ts);
-		SubstitutionMatrix pM = Core.buildDummySubstitutionMatrix();
-		RSEM.EM(rs, ts, cAligns, el, pM);	
-		*/
 	}
 	
 	public static ExpressionLevels EM( Reads rs,

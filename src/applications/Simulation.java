@@ -31,7 +31,7 @@ public class Simulation
 		Transcripts ts = FASTAReader.readTranscripts(args[0]);
 		ExpressionLevels trueEl = generateExpressionLevels(ts);
 
-		SimulatedReads rs = simulateReads(ts, trueEl, 20);
+		SimulatedReads rs = simulateReads(ts, trueEl, 25);
 
 		File fastaFile = new File(args[1]);
 		FileWriter.writeToFile(fastaFile, rs.fastaFormat());

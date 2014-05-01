@@ -83,7 +83,7 @@ public class TestRSEM
 		
 		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts);		
 		
-		ExpressionLevels el = TestCommon.buildDummyExpressionLevels(ts);
+		ExpressionLevels el = Core.buildDummyExpressionLevels(ts);
 		System.out.println(el);
 		
 		ExpectedHiddenData z = RSEM.eStep(rs, ts, cAligns, el, pM);
@@ -106,7 +106,7 @@ public class TestRSEM
 		
 		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts);		
 		
-		ExpressionLevels el = TestCommon.buildDummyExpressionLevels(ts);
+		ExpressionLevels el = Core.buildDummyExpressionLevels(ts);
 		System.out.println("\n ------- EXPRESSION LEVELS -------\n" + el);
 		
 		ExpectedHiddenData z = RSEM.eStep(rs, ts, cAligns, el, pM);
@@ -134,7 +134,7 @@ public class TestRSEM
 		
 		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts);	
 		System.out.println(cAligns);
-		ExpressionLevels el = TestCommon.buildDummyExpressionLevels(ts);
+		ExpressionLevels el = Core.buildDummyExpressionLevels(ts);
 		
 		RSEM.EM(rs, ts, cAligns, el, pM);	
 	}

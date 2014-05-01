@@ -18,16 +18,4 @@ public class TestCommon
 		
 		System.out.println(Common.reverseCompliment(seq));
 	}
-	
-	public static ExpressionLevels buildDummyExpressionLevels(Transcripts ts)
-	{
-		ExpressionLevels el = new ExpressionLevels(ts);
-		double count = 1;
-		for (Sequence s : ts.getSequences())
-		{
-			el.setExpressionLevel(s.getId(), count++);
-		}
-		el.normalize();
-		return el;
-	}
 }

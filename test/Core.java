@@ -1,4 +1,6 @@
+import rsem.model.ExpressionLevels;
 import rsem.model.no_indels.SubstitutionMatrix;
+import sequence.Sequence;
 import sequence.SequenceCollection;
 import sequence.Transcripts;
 
@@ -58,6 +60,18 @@ public class Core
 		dummyMatrix.normalize();
 		
 		return dummyMatrix;
+	}
+	
+	public static ExpressionLevels buildDummyExpressionLevels(Transcripts ts)
+	{
+		ExpressionLevels el = new ExpressionLevels(ts);
+		double count = 1;
+		for (Sequence s : ts.getSequences())
+		{
+			el.setExpressionLevel(s.getId(), count++);
+		}
+		el.normalize();
+		return el;
 	}
 
 }
