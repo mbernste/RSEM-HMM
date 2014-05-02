@@ -28,16 +28,22 @@ public class Simulation
 {
 	public static void main(String[] args)
 	{	
-		Transcripts ts = FASTAReader.readTranscripts(args[0]);
+		Common.readLength = Integer.parseInt(args[0]);
+		int numReads = Integer.parseInt(args[1]);
+		
+		Transcripts ts = FASTAReader.readTranscripts(args[2]);
 		ExpressionLevels trueEl = generateExpressionLevels(ts);
 
-		SimulatedReads rs = simulateReads(ts, trueEl, 25);
+		SimulatedReads rs = simulateReads(ts, trueEl, numReads);
 
-		File fastaFile = new File(args[1]);
+		File fastaFile = new File(args[3]);
 		FileWriter.writeToFile(fastaFile, rs.fastaFormat());
 
-		File mapFile = new File(args[2]);
+		File mapFile = new File(args[4]);
 		FileWriter.writeToFile(mapFile, rs.mapping());
+		
+		File elFile = new File(args[5]);
+		FileWriter.writeToFile(elFile, trueEl.toString());
 	}
 
 	public static ExpressionLevels generateExpressionLevels(Transcripts ts)
@@ -115,13 +121,13 @@ public class Simulation
 			/*
 			 *  Generate the read sequence 
 			 */
-			if (t.length() - startPos < Common.READ_LENGTH)  
+			if (t.length() - startPos < Common.readLength)  
 			{
 				readSeq = t.getSeq().substring(startPos, t.length());
 			}
 			else
 			{
-				readSeq = t.getSeq().substring(startPos, startPos + Common.READ_LENGTH);
+				readSeq = t.getSeq().substring(startPos, startPos + Common.readLength);
 			}
 
 			reads.addRead(new SimulatedRead(new Pair<String, Integer>(t.getId(), startPos),

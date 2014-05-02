@@ -1,12 +1,18 @@
+import java.io.File;
+
 import rsem.model.ExpressionLevels;
 import rsem.model.no_indels.SubstitutionMatrix;
+import sequence.Reads;
 import sequence.Sequence;
 import sequence.SequenceCollection;
+import sequence.SimulatedReads;
 import sequence.Transcripts;
 
 import common.Common;
 
+import data.readers.Alignments;
 import data.readers.FASTAReader;
+import data.readers.SAMReader;
 
 
 public class Core 
@@ -16,9 +22,12 @@ public class Core
 	
 	public static final String MAP_EXT = ".map";
 	public static final String FASTA_EXT = ".fa";
+	public static final String TXT_EXT = ".txt";
 	
 	public static final String TRANSCRIPT_SHORT_FNAME = "NM_refseq_ref.transcripts_small";
 	public static final String TRANSCRIPT_DUMMY_FNAME = "dummy";
+	public static final String READS_DUMMY_FNAME = "dummy_reads";
+	public static final String ALIGN_DUMMY_FNAME = "dummy_aligns";
 	
 	public static Transcripts getSmallTranscriptSet()
 	{
@@ -26,6 +35,32 @@ public class Core
 				 									  TRANSCRIPT_SHORT_FNAME + 
 				 									  FASTA_EXT);
 		 return ts;
+	}
+	
+	public static Reads getDummyReads()
+	{
+		Reads rs = FASTAReader.readReads(PATH_TO_DATA + 
+					 					 READS_DUMMY_FNAME + 
+					 					 FASTA_EXT);
+		return rs;
+	}
+	
+	public static TestKit getDummyTestKit()
+	{
+		Transcripts ts = FASTAReader.readTranscripts(PATH_TO_DATA + 
+				  									 TRANSCRIPT_SHORT_FNAME + 
+				  									 FASTA_EXT);
+		
+		SimulatedReads rs = FASTAReader.readSimulatedReads(PATH_TO_DATA + 
+				 						 		  		   READS_DUMMY_FNAME + 
+				 						 		  		   FASTA_EXT);
+		
+		File samFile = new File(PATH_TO_DATA + 
+								ALIGN_DUMMY_FNAME +
+								TXT_EXT);
+		Alignments aligns = SAMReader.readCandidateAlignments(samFile, rs, ts);
+	
+		return new Core.TestKit(rs, ts, aligns);
 	}
 	
 	public static Transcripts getDummyTranscriptSet()
@@ -40,7 +75,7 @@ public class Core
 	{
 		SubstitutionMatrix dummyMatrix = new SubstitutionMatrix();
 		
-		for (int i = 0; i < Common.READ_LENGTH; i++)
+		for (int i = 0; i < Common.readLength; i++)
 		{
 			for (int j = 0; j < Common.DNA_ALPHABET.length; j++)
 			{
@@ -72,6 +107,35 @@ public class Core
 		}
 		el.normalize();
 		return el;
+	}
+	
+	public static class TestKit
+	{
+		private Reads rs;
+		private Transcripts ts;
+		private Alignments aligns;
+		
+		TestKit(Reads rs, Transcripts ts, Alignments aligns)
+		{
+			this.rs = rs;
+			this.ts = ts;
+			this.aligns = aligns;
+		}
+		
+		public Reads reads()
+		{
+			return this.rs;
+		}
+		
+		public Transcripts transcripts()
+		{
+			return this.ts;
+		}
+		
+		public Alignments alignments()
+		{
+			return this.aligns;
+		}
 	}
 
 }

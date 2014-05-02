@@ -12,9 +12,25 @@ import java.util.Map;
  */
 public class State
 {
+	/**
+	 * Emission probabilities
+	 */
 	private Map<String, Double> emissionProbs;
-	private String id;
+	
+	/**
+	 * Unique ID
+	 */
+	protected String id;
+	
+	/**
+	 * The transitions to other states
+	 */
 	private ArrayList<Transition> transitions;
+	
+	/**
+	 * True if this state is silent
+	 */
+	protected boolean isSilent;
 	
 	/**
 	 * Constructor
@@ -23,6 +39,7 @@ public class State
 	{
 		transitions = new ArrayList<Transition>();
 		emissionProbs = new HashMap<String, Double>();
+		this.isSilent = false;
 	}
 	
 	/**
@@ -39,6 +56,14 @@ public class State
 	public void setId(String id)
 	{
 		this.id = id;
+	}
+	
+	/**
+	 * @return true if this state is a silent state
+	 */
+	public boolean isSilent()
+	{
+		return this.isSilent;
 	}
 	
 	/**

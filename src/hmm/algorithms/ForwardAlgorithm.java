@@ -47,7 +47,7 @@ public class ForwardAlgorithm
 				 *  time step
 				 */
 				double eProb = model.getEmissionProb(currState.getId(), 
-						  new Character(sequence.charAt(i)).toString());
+						  			Character.toString(sequence.charAt(i)));
 				
 				/*
 				 *  Initialize the summation

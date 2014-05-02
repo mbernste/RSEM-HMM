@@ -25,7 +25,7 @@ public class SubstitutionMatrix
 			symbolIndices.put(Common.DNA_ALPHABET[i], i);
 		}
 		
-		int rLength = Common.READ_LENGTH;
+		int rLength = Common.readLength;
 		int aLength = Common.DNA_ALPHABET.length;
 		values = new Double[rLength][aLength][aLength];
 		for (int p = 0; p < rLength; p++)
@@ -80,7 +80,7 @@ public class SubstitutionMatrix
 	
 	public void normalize()
 	{
-		for (int p = 0; p < Common.READ_LENGTH; p++)
+		for (int p = 0; p < Common.readLength; p++)
 		{
 			for (int t = 0; t < Common.DNA_ALPHABET.length; t++)
 			{
@@ -104,7 +104,7 @@ public class SubstitutionMatrix
 	{
 		String str = " ------------ ";
 		
-		int rLength = Common.READ_LENGTH;
+		int rLength = Common.readLength;
 		for (int p = 0; p < rLength; p++)
 		{
 			str += "\n** Position " + p + " **\n";

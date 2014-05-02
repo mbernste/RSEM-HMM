@@ -427,7 +427,7 @@ public class ExpectedHiddenData
 						System.out.println("Read " + rId + ":\t\t\t" 
 											+ rs.getRead(rId).getSeq());
 						System.out.println("Tran " + tId + ":\t\t" 
-											+ ts.getTranscript(tId).getSeq().substring(tPos, tPos + Common.READ_LENGTH));
+											+ ts.getTranscript(tId).getSeq().substring(tPos, tPos + Common.readLength));
 					}
 					
 					sum += e.getValue().sumAllValues();
@@ -452,7 +452,7 @@ public class ExpectedHiddenData
 					
 					if (debug > 1)
 						System.out.println("Tran " + tId + ":\t\t" + 
-									ts.getTranscript(tId).getSeq().substring(tPos - 1, tPos + Common.READ_LENGTH - 1) 
+									ts.getTranscript(tId).getSeq().substring(tPos - 1, tPos + Common.readLength - 1) 
 									+ " --> " + s);
 				}
 			}

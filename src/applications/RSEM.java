@@ -152,7 +152,7 @@ public class RSEM
 		 */
 		SubstitutionMatrix pM = new SubstitutionMatrix();
 		double sum = 0.0;
-		for (int p = 0; p < Common.READ_LENGTH; p++)
+		for (int p = 0; p < Common.readLength; p++)
 		{
 			for (char t : Common.DNA_ALPHABET)
 			{

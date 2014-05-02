@@ -19,18 +19,38 @@ public class ProfileHmmBuilder
 	
 	private HiddenMarkovModel hmm;
 	
-	public HiddenMarkovModel buildHMM(Transcripts ts, 
-									  Reads rs, 
-									  Alignments cAligns)
+	private String INSERTION_PARAMS;
+	
+	public HiddenMarkovModel buildHMM(Transcripts ts, Alignments cAligns)
 	{
 		hmm = new HiddenMarkovModel();
 
-		
-		
-		for (Sequence s : ts.getSequences())
+		/*
+		 * Set initial emission probabilities for all insertion states 
+		 * to the uniform distribution.  These parameters are all tied.
+		 */
+		for (char symbol : Common.DNA_ALPHABET)
 		{
-			Transcript t = (Transcript) s;
-			buildHMMForTranscript(t, Common.FORWARD_ORIENTATION);
+			StateParamsTied.tiedEmissionParams
+						   .get(INSERTION_PARAMS)
+						   .put(Character.toString(symbol), 0.25);
+		}
+		
+		/*
+		 * The start state that attaches to all profile-HMM "mux" states
+		 */
+		State startState = new StateSilent();
+		
+		/*
+		 * Build a profile HMM structure for each candidate alignment
+		 */
+		for (Object[] o : cAligns.getAlignments())
+		{
+			String tId = (String) o[1];
+			int startPos = (Integer) o[2];
+			boolean orientation = (Boolean) o[3];
+			
+			buildHMMForAlignment(ts.getTranscript(tId), startPos, orientation);
 		}
 		
 		/*
@@ -38,111 +58,128 @@ public class ProfileHmmBuilder
 		 */
 		Map<String, Boolean> hmmsConstructed = new HashMap<String, Boolean>();
 		
-		for (Object[] o : cAligns.getAlignments())
-		{
-			String readId = (String) o[0];
-			String transId = (String) o[1];
-			Integer startPos = (Integer) o[2];
-			Boolean orientation = (Boolean) o[3];
-			
-			//if (hmmsConstructed.containsKey(transId) && 
-			//	hmmsConstructed.get(key))
-				
-		}
-			
 		return hmm;
 	}
 	
-	public void buildHMMForTranscript(Transcript t, boolean orientation)
-	{
+	public State buildHMMForAlignment(Transcript t, 
+									 int startPos, 
+									 boolean orientation)
+	{	
+		/*
+		 * Build profile-HMM structure
+		 */
+		buildStates(t, startPos, orientation);
+		createInterSeqeunceTransitions(t, startPos, orientation);
 		
-		createMatchStates(t, orientation);
-		createInsertionStates(t, orientation);
-		createDeletionStates(t, orientation);
-		createTransitions(t, orientation);
+		/*
+		 * Create mux state with connection to all match states
+		 */
+		State muxState = new StateSilent();
+		for (int i = startPos; i < startPos + Common.readLength + Common.bonusLength; i++)
+		{
+			State mState = hmm.getStateById(matchStateId(t, i, orientation));
+			
+			muxState.addTransition(new Transition(muxState.getId(),
+												  matchStateId(t, i, orientation),
+												  1.0 / (Common.readLength + Common.bonusLength)));
+		}
+		
+		return muxState;
 	}
 	
-	
-	
-	public void createMatchStates(Transcript t, boolean orientation)
-	{		
-		/*
-		 * Create all match states
-		 */
-		for (int i = 0; i < t.length(); i++)
-		{			
-			State mState = new State();
-			mState.setId( matchStateId(t, i, orientation) );
+	public void buildStates(Transcript t, 
+			 				int startPos, 
+			 				boolean orientation)
+	{
+		for (int i = startPos; i < startPos + Common.readLength + Common.bonusLength; i++)
+		{		
+			String mId = matchStateId(t, i, orientation);
+			String dId = deleteStateId(t, i, orientation);
+			String iId = insertStateId(t, i, orientation);
 			
 			/*
-			 * Set initial emission probabilities based on teh symbol in the
-			 * transcript
+			 * If the HMM already has states for this region, then we don't 
+			 * continue creating states.  Instead connect the current
+			 * construction to the next construction.
 			 */
-			for (char symbol : Common.DNA_ALPHABET)
+			if (hmm.states.containsState(mId))
 			{
-				if (symbol == t.getSeq().charAt(i))
-				{
-					mState.addEmission(Character.toString(symbol), 
-									   	   1 - (3 * NON_MATCH_P));
-				}
-				else
-				{
-					mState.addEmission(Character.toString(symbol), 
-										   NON_MATCH_P);
-				}
+				// TODO ATTACH THE TWO CONSTRUCTIONS
+				
+				return;
 			}
 			
+			char matchedSymbol = t.getSeq().charAt(i);
+			
+			State mState =  createMatchState(mId, matchedSymbol, i, orientation);
+			State iState =  createInsertState(iId, i, orientation);
+			State dState =  createDeleteState(dId, i, orientation);
+	
 			hmm.states.addState(mState);
+			hmm.states.addState(iState);
+			hmm.states.addState(dState);
 		}	
 	}
 	
-	public void createInsertionStates(Transcript t, boolean orientation)
+	public State createMatchState(String mId, 
+					 			  char matchedSymbol, 
+					 			  int startPos, 
+					 			  boolean orient)
 	{
+		State mState = new State();
+		mState.setId(mId);
+		
 		/*
-		 * Create all insertion states
+		 * Set initial emission probabilities based on teh symbol in the
+		 * transcript
 		 */
-		for (int i = 0; i < t.length(); i++)
+		for (char symbol : Common.DNA_ALPHABET)
 		{
-			State iState = new State();
-			iState.setId( insertStateId(t, i, orientation) );
-			
-			/*
-			 * Set initial emission probabilities to the uniform distribution
-			 */
-			for (char symbol : Common.DNA_ALPHABET)
+			if (symbol == matchedSymbol)
 			{
-				iState.addEmission(Character.toString(symbol), 0.25);
+				mState.addEmission(Character.toString(symbol), 
+								   	   1 - (3 * NON_MATCH_P));
 			}
-			
-			hmm.states.addState(iState);
+			else
+			{
+				mState.addEmission(Character.toString(symbol), 
+									   NON_MATCH_P);
+			}
 		}
+		
+		return mState;
 	}
 	
-	public void createDeletionStates(Transcript t, boolean orientation)
+	
+	public State createInsertState(String sId, int startPos, boolean orient)
 	{
-		/*
-		 * Create all deletion states
-		 */
-		for (int i = 0; i < t.length(); i++)
-		{
-			State dState = new State();
-			dState.setId( deleteStateId(t, i, orientation) );
-			
-			/*
-			 * Set initial emission probabilities to the uniform distribution
-			 */
-			for (char symbol : Common.DNA_ALPHABET)
-			{
-				dState.addEmission(Character.toString(symbol), 0.0);
-			}
-			
-			hmm.states.addState(dState);
-		}
+		State iState = new StateParamsTied(INSERTION_PARAMS);
+		iState.setId( sId );
+		return iState;
 	}
 	
-	public void createTransitions(Transcript t, boolean orientation)
+	public State createDeleteState(String dId, int startPos, boolean orient)
 	{
-		for (int i = 0; i < t.length(); i++)
+		State dState = new State();
+		dState.setId( dId );
+		
+		/*
+		 * Set initial emission probabilities to the uniform distribution
+		 */
+		for (char symbol : Common.DNA_ALPHABET)
+		{
+			dState.addEmission(Character.toString(symbol), 0.0);
+		}
+		
+		return dState;
+	}
+	
+	
+	public void createInterSeqeunceTransitions(Transcript t, 
+											   int startPos, 
+											   boolean orientation)
+	{
+		for (int i = startPos; i < startPos + Common.readLength + Common.bonusLength; i++)
 		{
 			State dState = hmm.getStateById(deleteStateId(t, i, orientation));
 			State iState = hmm.getStateById(insertStateId(t, i, orientation));
