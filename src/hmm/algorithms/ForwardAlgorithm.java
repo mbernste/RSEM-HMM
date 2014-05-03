@@ -40,37 +40,69 @@ public class ForwardAlgorithm
 		
 		for (int i = 0; i < sequence.length(); i++)
 		{	
+			/*
+			 * Iterate through all silent states
+			 *  
+			 * TODO OPTIMIZE THIS
+			 */
 			for (State currState : states)
 			{
-				/*
-				 *  The emission probability of the current symbol at the ith
-				 *  time step
-				 */
-				double eProb = model.getEmissionProb(currState.getId(), 
-						  			Character.toString(sequence.charAt(i)));
-				
-				/*
-				 *  Initialize the summation
-				 */
-				double sum = 0;
-				
-				for (State lastState : states)
+				if  (currState.isSilent())
 				{
-					double fValue = dpMatrix.getValue(lastState, i);
-					
-					double tProb  = model.getTransitionProb(lastState.getId(), 
-														   currState.getId());
-			
-					sum += (fValue * tProb);
-					
+					/*
+					 * Sum over previous time-step
+					 */
+					double sum = 0;
+					for (State lastState : states)
+					{
+						double fValue = dpMatrix.getValue(lastState, i);
+						
+						double tProb  = model.getTransitionProb(lastState.getId(), 
+															   currState.getId());
+						sum += (fValue * tProb);
+					}	
+					double newFValue = sum;
+						
+					/*
+					 *  Set the new value in the DP matrix
+					 */
+					dpMatrix.setValue(currState, i, newFValue);
 				}
-				
-				double newFValue = sum * eProb;
-				
-				/*
-				 *  Set the new value in the DP matrix
-				 */
-				dpMatrix.setValue(currState, i+1, newFValue);
+			}
+			
+			/*
+			 * Iterate through all non-silent states
+			 */
+			for (State currState : states)
+			{
+				if (!currState.isSilent())
+				{
+					/*
+					 *  The emission probability of the current symbol at the 
+					 *  ith time step.
+					 */
+					double eProb = model.getEmissionProb(currState.getId(), 
+							  			Character.toString(sequence.charAt(i)));
+					
+					/*
+					 * Sum over previous time-step
+					 */
+					double sum = 0;
+					for (State lastState : states)
+					{
+						double fValue = dpMatrix.getValue(lastState, i);
+						
+						double tProb  = model.getTransitionProb(lastState.getId(), 
+															   currState.getId());
+						sum += (fValue * tProb);
+					}	
+					double newFValue = sum * eProb;
+						
+					/*
+					 *  Set the new value in the DP matrix
+					 */
+					dpMatrix.setValue(currState, i+1, newFValue);
+				}
 			}
 		}
 		
@@ -132,6 +164,7 @@ public class ForwardAlgorithm
 						dpMatrix.getValue(state, timestep));
 				}
 			}
+			System.out.println("\n-------------------");
 		}
 		
 		System.out.println("Forward probability: " + finalProb);

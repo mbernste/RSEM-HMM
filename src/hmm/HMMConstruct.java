@@ -21,9 +21,13 @@ public class HMMConstruct
 	 */
 	protected Map<String, HMM> subHMMs;	
 	
-	public HMM getHMM()
+	public HMM getMainHMM()
 	{
 		return mainHMM;
 	}
-	
+
+	public HMM getReadHMM(String rId)
+	{
+		return subHMMs.get(rId);
+	}
 }

@@ -8,6 +8,7 @@ import common.Common;
 import data.readers.Alignments;
 
 import sequence.Reads;
+import sequence.Sequence;
 import sequence.Transcript;
 import sequence.Transcripts;
 
@@ -19,6 +20,11 @@ public class HMMConstructBuilder
 	private static final double NON_MATCH_P = 0.05;
 	
 	/*
+	 * The ID for the tied insertion-state emission parameters
+	 */
+	private String INSERTION_PARAMS_ID = "Inert_Params";
+	
+	/*
 	 * The HMM under construction
 	 */
 	private HMM mainHmm;
@@ -28,12 +34,17 @@ public class HMMConstructBuilder
 	 */
 	private ArrayList<State> muxStates;
 	
-	private String INSERTION_PARAMS_ID = "Inert_Params";
+	/*
+	 * The HMMs corresponding to each individual read.  Maps the read ID to the
+	 * HMM object.
+	 */
+	private Map<String, HMM> subHMMs;
 	
-	public HMMConstruct buildHMM(Transcripts ts, Reads rs, Alignments cAligns)
+	public HMMConstruct buildHMMConstruct(Transcripts ts, Reads rs, Alignments cAligns)
 	{	
 		mainHmm = new HMM();
 		muxStates = new ArrayList<State>();
+		subHMMs = new HashMap<String, HMM>();
 		
 		StateParamsTied.tiedEmissionParams.put(INSERTION_PARAMS_ID, 
 											   new HashMap<String, Double>());
@@ -61,13 +72,20 @@ public class HMMConstructBuilder
 		 */
 		for (Object[] o : cAligns.getAlignments())
 		{
+			String rId = (String) o[0];
 			String tId = (String) o[1];
 			int startPos = (Integer) o[2];
 			boolean orientation = (Boolean) o[3];
 			
-			buildHMMForAlignment(ts.getTranscript(tId), 
-												  startPos, 
-												  orientation);	
+			HMM rHMM = new HMM();
+			rHMM.states.addState(startState);
+			rHMM.setBeginStateId(startState.getId());
+			subHMMs.put(rId, rHMM);
+			
+			buildHMMForAlignment(rId,
+								 ts.getTranscript(tId), 
+								 startPos, 
+								 orientation);	
 		}
 		
 		/*
@@ -84,20 +102,26 @@ public class HMMConstructBuilder
 		}
 		startState.normalizeTransitionProbabilities();
 		
+		/*
+		 * Create HMMConstruct object
+		 */
 		HMMConstruct hmmConstruct = new HMMConstruct();
-		hmmConstruct.mainHMM = mainHmm;
+		hmmConstruct.mainHMM = this.mainHmm;
+		hmmConstruct.subHMMs = this.subHMMs;
+		
 		return hmmConstruct;
 	}
 	
-	public State buildHMMForAlignment(Transcript t, 
-									 int startPos, 
-									 boolean orientation)
+	public State buildHMMForAlignment(String rId,
+									  Transcript t, 
+									  int startPos, 
+									  boolean orientation)
 	{	
 		/*
 		 * Build profile-HMM structure
 		 */
 		System.out.println("\nSTART BUILDING TRANS " + t.getId() + " STARTING AT " + startPos);
-		buildStates(t, startPos, orientation);
+		buildStates(rId, t, startPos, orientation);
 		createInterSeqeunceTransitions(t, startPos, orientation);
 		
 		/*
@@ -113,11 +137,15 @@ public class HMMConstructBuilder
 			mainHmm.states.addState(muxState);
 		}
 		
+		/*
+		 * Always add this mux state to the HMM corresponding to the read
+		 */
+		subHMMs.get(rId).states.addState(muxState);
+		
 		for (int i = startPos; i < startPos + 2*Common.readLength; i++)
 		{
 			if (i >= t.length()) break;			
 			
-			// TODO MAKE SURE MUX TRANSITION PROBABILITIES ARE UNIFORM
 			muxState.addTransition(new Transition(muxState.getId(),
 												  matchStateId(t, i, orientation),
 												  1.0));
@@ -126,16 +154,14 @@ public class HMMConstructBuilder
 		return muxState;
 	}
 	
-	public void buildStates(Transcript t, 
+	public void buildStates(String rId,
+							Transcript t, 
 			 				int startPos, 
 			 				boolean orientation)
 	{
 		for (int i = startPos; i < startPos +  2*Common.readLength; i++)
 		{				
-			if (i >= t.length()) 
-			{
-				break;
-			}
+			if (i >= t.length()) break;
 			
 			String mId = matchStateId(t, i, orientation);
 			String dId = deleteStateId(t, i, orientation);
@@ -156,6 +182,11 @@ public class HMMConstructBuilder
 				mainHmm.states.addState(dState);
 				mainHmm.states.addState(iState);
 				mainHmm.states.addState(mState);
+				
+				HMM subHMM = subHMMs.get(rId);
+				subHMM.states.addState(dState);
+				subHMM.states.addState(iState);
+				subHMM.states.addState(mState);
 			}
 		}	
 	}
