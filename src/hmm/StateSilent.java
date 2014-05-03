@@ -1,8 +1,7 @@
 package hmm;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class StateSilent extends State
 {
@@ -36,6 +35,36 @@ public class StateSilent extends State
 	{
 		// TODO CHECK IF THIS IS CORRECT
 		return 1.0;
+	}
+	
+	@Override
+	public String toString()
+	{
+		String result = "";
+		result += "[";
+		result += this.id;
+		result += "]";
+		result += "\n";
+		
+		result += "............\n";
+		
+		for (Entry<String, Transition> e : transitions.entrySet())
+		{
+			String destStateId = e.getKey();			
+			result += (e.getValue().getTransitionProbability() + 
+					" --> ");
+			result += ("[" + destStateId + "]");
+			result += "\n";
+		}
+		
+		result += "............\n";
+
+		result += "silent\n";
+
+		result += "............\n";
+		result += "\n";			
+		
+		return result;
 	}
 
 }

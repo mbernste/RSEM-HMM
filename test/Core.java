@@ -48,16 +48,21 @@ public class Core
 	public static TestKit getDummyTestKit()
 	{
 		Transcripts ts = FASTAReader.readTranscripts(PATH_TO_DATA + 
-				  									 TRANSCRIPT_SHORT_FNAME + 
+				  									 TRANSCRIPT_DUMMY_FNAME + 
 				  									 FASTA_EXT);
 		
 		SimulatedReads rs = FASTAReader.readSimulatedReads(PATH_TO_DATA + 
 				 						 		  		   READS_DUMMY_FNAME + 
 				 						 		  		   FASTA_EXT);
 		
+		System.out.println(ts);
+		System.out.println(rs);
+		
 		File samFile = new File(PATH_TO_DATA + 
 								ALIGN_DUMMY_FNAME +
 								TXT_EXT);
+		
+		
 		Alignments aligns = SAMReader.readCandidateAlignments(samFile, rs, ts);
 	
 		return new Core.TestKit(rs, ts, aligns);

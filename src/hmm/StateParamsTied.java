@@ -2,10 +2,12 @@ package hmm;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class StateParamsTied extends State
 {
-	public static Map<String,Map<String, Double>> tiedEmissionParams;
+	public static Map<String,Map<String, Double>> tiedEmissionParams
+		= new HashMap<String, Map<String, Double>>();
 	
 	/**
 	 * The ID of the parameters that this State uses
@@ -20,7 +22,6 @@ public class StateParamsTied extends State
 	public StateParamsTied(String paramsId)
 	{
 		this.paramsId = paramsId;
-		tiedEmissionParams.put(this.paramsId, new HashMap<String, Double>());
 	}
 	
 	/**
@@ -60,5 +61,39 @@ public class StateParamsTied extends State
 		{
 			return 0.0;
 		}
+	}
+	
+	@Override
+	public String toString()
+	{
+		String result = "";
+		result += "[";
+		result += this.id;
+		result += "]";
+		result += "\n";
+		
+		result += "............\n";
+		
+		for (Entry<String, Transition> e : transitions.entrySet())
+		{
+			String destStateId = e.getKey();			
+			result += (e.getValue().getTransitionProbability() + 
+					" --> ");
+			result += ("[" + destStateId + "]");
+			result += "\n";
+		}
+		
+		result += "............\n";
+		
+		for (Entry<String, Double> entry : 
+			 StateParamsTied.tiedEmissionParams.get(this.paramsId).entrySet())
+		{
+			result += (entry.getKey() + " >> " + entry.getValue() + "\n");
+		}		
+
+		result += "............\n";
+		result += "\n";			
+		
+		return result;
 	}
 }

@@ -50,39 +50,7 @@ public class HiddenMarkovModel
 		
 		for (State state : states.getStates())
 		{			
-			// Print state
-			result += "[";
-			result += state.getId();
-			result += "]";
-			result += "\n";
-			
-			result += "............\n";
-			
-			// Print transtitions from current state
-			ArrayList<Transition> transitions = state.getTransitions();
-			
-			for (int j=0; j<transitions.size(); j++)
-			{
-				String destStateId = transitions.get(j).getDestinationId();
-				State destState = states.getStateById( destStateId );
-				
-				result += (transitions.get(j).getTransitionProbability() + 
-						" --> ");
-				result += ("[" + destState.getId() + "]");
-				result += "\n";
-			}
-			
-			result += "............\n";
-			
-			for (Entry<String, Double> entry : 
-				 state.getEmissionProbabilites().entrySet())
-			{
-				result += (entry.getKey() + " >> " + entry.getValue() + "\n");
-			}
-			
-			result += "............\n";
-			
-			result += "\n";			
+			result += state.toString();
 		}
 		
 		return result;

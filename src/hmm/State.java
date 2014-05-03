@@ -1,8 +1,11 @@
 package hmm;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 
 /**
@@ -25,7 +28,7 @@ public class State
 	/**
 	 * The transitions to other states
 	 */
-	private ArrayList<Transition> transitions;
+	protected Map<String, Transition> transitions;
 	
 	/**
 	 * True if this state is silent
@@ -37,7 +40,7 @@ public class State
 	 */
 	public State()
 	{
-		transitions = new ArrayList<Transition>();
+		transitions = new HashMap<String, Transition>();
 		emissionProbs = new HashMap<String, Double>();
 		this.isSilent = false;
 	}
@@ -105,28 +108,31 @@ public class State
 	
 	public double getTransitionProb(String destId)
 	{
-		for (Transition trans : transitions)
+		if (transitions.containsKey(destId))
 		{
-			if (trans.getDestinationId().equals(destId))
-			{
-				return trans.getTransitionProbability();
-			}
+			return transitions.get(destId).getTransitionProbability();
 		}
 		
 		return 0.0;
 	}
 	
-	public boolean transitionExists(String destId)
+	public void normalizeTransitionProbabilities()
 	{
-		for (Transition trans : transitions)
+		double sum = 0.0;
+		for (Transition t : transitions.values())
 		{
-			if (trans.getDestinationId().equals(destId))
-			{
-				return true;
-			}
+			sum += t.getTransitionProbability();
 		}
 		
-		return false;
+		for (Transition t : transitions.values())
+		{
+			t.setTransitionProbability(t.getTransitionProbability() / sum);
+		}
+	}
+	
+	public boolean transitionExists(String destId)
+	{
+		return transitions.containsKey(destId);
 	}
 	
 	/**
@@ -136,16 +142,19 @@ public class State
 	 */
 	public void addTransition(Transition transition)
 	{
-		transitions.add(transition);
+		if (!transitionExists(transition.getDestinationId()))
+		{
+			transitions.put(transition.getDestinationId(), transition);
+		}
 	}
 
 	/**
 	 * @return the array list containing all transition objects moving from 
 	 * this state
 	 */
-	public ArrayList<Transition> getTransitions()
+	public Collection<Transition> getTransitions()
 	{
-		return transitions;
+		return transitions.values();
 	}
 		
 	/**
@@ -155,20 +164,42 @@ public class State
 	 * @return the transition that moves from this state to the specified 
 	 * state, if such a transition does not exist, this method returns null
 	 */
-	public Transition findTransition(State nextState)
+	public Transition findTransition(State destinationId)
 	{	
-		String nextStateId = nextState.getId();
+		return transitions.get(destinationId);
+	}
+	
+	@Override
+	public String toString()
+	{
+		String result = "";
+		result += "[";
+		result += this.id;
+		result += "]";
+		result += "\n";
 		
-		Transition foundTransition = null;
-				
-		for (int i = 0; i < transitions.size(); i++)
+		result += "............\n";
+		
+		for (Entry<String, Transition> e : transitions.entrySet())
 		{
-			if (transitions.get(i).getDestinationId().equals(nextStateId))
-			{
-				foundTransition = (Transition) transitions.get(i);
-			}
+			String destStateId = e.getKey();			
+			result += (e.getValue().getTransitionProbability() + 
+					" --> ");
+			result += ("[" + destStateId + "]");
+			result += "\n";
 		}
 		
-		return foundTransition;
+		result += "............\n";
+
+		for (Entry<String, Double> entry : 
+			 getEmissionProbabilites().entrySet())
+		{
+			result += (entry.getKey() + " >> " + entry.getValue() + "\n");
+		}		
+
+		result += "............\n";
+		result += "\n";			
+		
+		return result;
 	}
 }
