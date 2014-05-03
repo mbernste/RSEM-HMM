@@ -3,11 +3,10 @@ package hmm.algorithms;
 import hmm.HMM;
 import hmm.State;
 
-import java.util.Collection;
 import java.util.ArrayList;
 
 
-public class BackwardAlgorithm 
+public class BackwardAlgorithm_orig 
 {	
 	public static void run(HMM model, String sequence)
 	{
@@ -32,70 +31,62 @@ public class BackwardAlgorithm
 	{	
 		
 		// Get the states
-		Collection<State> states = model.getStateContainer().getStates();
+		ArrayList<State> states = new ArrayList<State>( model.getStateContainer().getStates() );
 		
 		//********************************************************************
 		// Fill in the Dynamic Programming matrix
 		//********************************************************************
 		
-		for (int i = dpMatrix.getNumColumns() - 2; i >= 0; i--)
+		for (int i = sequence.length() - 2; i >= 0; i--)
 		{	
-			System.out.println("I " + i);
-			
-			/*
-			 * Compute for non-silent states
-			 */
 			for (State currState : states)
 			{
-				if (!currState.isSilent())
+				double sum = 0;
+				
+				for (State forwardState : states)
 				{
-					double sum = 0;
+					double eProb = model.getEmissionProb(forwardState.getId(),
+							  		Character.toString(sequence.charAt(i+1)));
 					
-					for (State forwardState : states)
-					{
-						double eProb = model.getEmissionProb(forwardState.getId(),
-								  		Character.toString(sequence.charAt(i)));
-						
-						double bValue = dpMatrix.getValue(forwardState, i+1);
-						
-						double tProb  = model.getTransitionProb(currState.getId(),
-																forwardState.getId());
-									
-						sum += (tProb * eProb * bValue);
-					}
+					double bValue = dpMatrix.getValue(forwardState, i+2);
 					
-					// Set the new value in the DP matrix
-					dpMatrix.setValue(currState, i, sum);
+					double tProb  = model.getTransitionProb( currState.getId(),
+															forwardState.getId() 
+														  );
+								
+					sum += (tProb * eProb * bValue);
 				}
-			}
-			
-			/*
-			 * Compute silent states
-			 */
-			for (State currState : states)
-			{
-				if (currState.isSilent())
-				{
-					double sum = 0;
-					for (State forwardState : states)
-					{
-						double bValue = dpMatrix.getValue(forwardState, i);
-						
-						double tProb  = model.getTransitionProb( currState.getId(),
-																 forwardState.getId() 
-															  );				
-						sum += (tProb * bValue);
-					}
-					
-					// Set the new value in the DP matrix
-					dpMatrix.setValue(currState, i, sum);
-				}
+				
+				// Set the new value in the DP matrix
+				dpMatrix.setValue(currState, i+1, sum);
+				
 			}
 		}
 		
-		System.out.println(dpMatrix + "\n");
+		//********************************************************************
+		// Compute the final probability for transitioning to the end state
+		// from the end of the sequence
+		//********************************************************************
 		
-		return dpMatrix.getValue(model.getBeginState(), 0);		
+		double sum = 0;
+		
+		for (State state : states)
+		{
+			double eProb = model.getEmissionProb(state.getId(), 
+					  new Character(sequence.charAt(0)).toString());
+			
+			double bValue = dpMatrix.getValue(state, 1);
+			
+			double tProb  = model.getTransitionProb( model.getBeginStateId(),
+													state.getId() 
+												  );
+						
+			sum += (tProb * eProb * bValue);
+						
+		}
+		
+		return sum;
+		
 	}
 	
 	/**
@@ -115,18 +106,28 @@ public class BackwardAlgorithm
 		
 		
 		/*
-		 * If no end state, then set the probability at the last time step 
-		 * for all states should be 1.0
+		 * If no end state, then set the probability at the last time step to 
+		 * being uniform over all states.
+		 * 
+		 * We first count all non-silent states.
 		 */
+		int numNonSilentStates = 0; 
+		for (State state : model.getStateContainer().getStates())
+		{
+			if (!state.isSilent()) numNonSilentStates++;
+		}
+		
+		double pInit = 1.0 / numNonSilentStates;
 		for (State state : model.getStateContainer().getStates())
 		{
 			if (!state.isSilent())
 			{
-				dpMatrix.setValue(state, dpMatrix.getNumColumns() - 1, 1.0);
+				dpMatrix.setValue(state, dpMatrix.getNumColumns() - 1, pInit); 
 			}
 		}
 		
-		// TODO THIS IS WHEN THE END STATE EXISTS
+		System.out.println(dpMatrix);
+		
 		/*
 		for (State state : model.getStateContainer().getStates())
 		{

@@ -1,3 +1,4 @@
+import pair.Pair;
 import data.readers.Alignments;
 import sequence.Reads;
 import sequence.Transcript;
@@ -5,6 +6,8 @@ import sequence.Transcripts;
 import hmm.HMM;
 import hmm.HMMConstruct;
 import hmm.HMMConstructBuilder;
+import hmm.algorithms.BackwardAlgorithm;
+import hmm.algorithms.DpMatrix;
 import hmm.algorithms.ForwardAlgorithm;
 
 
@@ -26,11 +29,17 @@ public class TestHmmConstructBuilder
 		Transcript t = ts.getTranscript(0);
 		
 		HMMConstructBuilder builder = new HMMConstructBuilder();
-		HMMConstruct hmmC = builder.buildHMMConstruct(ts, rs, aligns);
-		
-		System.out.println(hmmC.getReadHMM("4"));
+		HMMConstruct hmmC = builder.buildHMMConstruct(ts, rs, aligns);		
 		
 		String seq = rs.getRead("4").getSeq();
-		ForwardAlgorithm.run(hmmC.getReadHMM("4"), seq);
+		//Pair<Double, DpMatrix> result = ForwardAlgorithm.run(hmmC.getReadHMM("4"), seq);
+		
+		//System.out.println(result.getSecond());
+		
+		//ForwardAlgorithm.run(hmmC.getReadHMM("4"), seq);
+		//BackwardAlgorithm.run(hmmC.getReadHMM("4"), seq);
+		
+		
+		//System.out.println(result.getSecond());
 	}
 }

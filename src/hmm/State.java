@@ -45,6 +45,12 @@ public class State
 		this.isSilent = false;
 	}
 	
+	public State(String id)
+	{
+		this();
+		this.id = id;
+	}
+	
 	/**
 	 * Copy constructor.
 	 */

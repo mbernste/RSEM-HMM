@@ -28,7 +28,7 @@ public class ViterbiAlgorithm
 	{	
 		
 		// Get the states
-		ArrayList<State> states = model.getStateContainer().getStates();
+		ArrayList<State> states = new ArrayList<State>(model.getStateContainer().getStates());
 		
 		//********************************************************************
 		// Fill in the Dynamic Programming matrix

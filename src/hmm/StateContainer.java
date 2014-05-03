@@ -27,12 +27,9 @@ public class StateContainer
 	/**
 	 * @return the array list of all of the states in the model
 	 */
-	public ArrayList<State> getStates()
+	public Collection<State> getStates()
 	{
-		Collection<State> col = states.values();
-		ArrayList<State> statesList = new ArrayList<State>(col);
-		
-		return statesList;
+		return states.values();
 	}
 	
 	/**

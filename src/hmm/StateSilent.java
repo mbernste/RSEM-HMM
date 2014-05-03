@@ -14,6 +14,12 @@ public class StateSilent extends State
 		this.isSilent = true;
 	}
 	
+	public StateSilent(String id)
+	{
+		super(id);
+		this.isSilent = true;
+	}
+	
 	@Override
 	public Map<String, Double> getEmissionProbabilites()
 	{

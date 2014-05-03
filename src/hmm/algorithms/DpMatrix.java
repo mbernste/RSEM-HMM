@@ -41,7 +41,7 @@ public class DpMatrix
 	{
 		stateRowMap = new BiMap<State, Integer>();
 		
-		ArrayList<State> states = model.getStateContainer().getStates();
+		ArrayList<State> states = new ArrayList<State>(model.getStateContainer().getStates());
 		
 		for (int index = 0; index < states.size(); index++)
 		{
@@ -56,7 +56,7 @@ public class DpMatrix
 		/*
 		 *  The first time unit does not see a symbol emitted
 		 */
-		colSymbolMap.add('\0');
+		colSymbolMap.add('-');
 		
 		for (int i = 0; i < sequence.length(); i++)
 		{
@@ -136,22 +136,22 @@ public class DpMatrix
 		
 		result += "\nDynamic Programming Matrix:\n\n";
 		
-		result += "       ";
+		result += "\t\t";
 		
 		// Print the character over each columns
 		for (Character c : colSymbolMap)
 		{
-			result += (c + "   ");
+			result += (c + "\t");
 		}
 		result += "\n";
 		
 		for (int r = 0; r < numRows; r++)
 		{
-			result += ("[" + stateRowMap.getKey(r).getId() + "] ");
+			result += ("[" + stateRowMap.getKey(r).getId() + "]\t");
 			
 			for (int c = 0; c < numCols; c++)
 			{
-				result += (matrix[r][c].getValue() + " ");
+				result += (matrix[r][c].getValue() + "\t");
 			}
 			result += "\n";
 		}

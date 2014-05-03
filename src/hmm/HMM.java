@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 public class HMM 
 {
 	protected StateContainer states;
+	
 	private String beginStateId;
 	private String endStateId;
 
@@ -100,6 +101,11 @@ public class HMM
 	public String getBeginStateId()
 	{
 		return beginStateId;
+	}
+	
+	public void addState(State newState)
+	{
+		this.states.addState(newState);
 	}
 	
 	/**

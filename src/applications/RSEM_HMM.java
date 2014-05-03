@@ -22,7 +22,7 @@ import data.readers.FASTAReader;
 import data.readers.MappingReader;
 import data.readers.SAMReader;
 
-public class RSEM_Indels 
+public class RSEM_HMM 
 {
 private static int debug = 1;
 	
@@ -48,21 +48,9 @@ private static int debug = 1;
 		 */
 		double probData = 1.0;
 		double prevProbData = 0.0;
-		//while (Math.abs(probData - prevProbData) > EPSILON)
-		for (int i = 0; i < 20; i++)
+		while (Math.abs(probData - prevProbData) > EPSILON)
 		{
-			/*
-			 * E-Step
-			 */
-			z = eStep(rs, ts, cAligns, pEl, pM);
-			//System.out.println(z);
-			
-			/*
-			 * M-Step
-			 */
-			Pair<ExpressionLevels, SubstitutionMatrix> params = mStep(rs, ts, z);
-			pEl = params.getFirst();
-			pM = params.getSecond();
+			// TODO: Implement Baum-welch here!
 		
 			prevProbData = probData;
 			probData = probabilityOfData(rs, ts, cAligns, z, pEl, pM);	
