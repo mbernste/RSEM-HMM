@@ -1,6 +1,6 @@
 package hmm.algorithms;
 
-import hmm.HiddenMarkovModel;
+import hmm.HMM;
 import hmm.State;
 
 import java.util.ArrayList;
@@ -9,7 +9,7 @@ import pair.Pair;
 
 public class ViterbiAlgorithm 
 {	
-	public static void run(HiddenMarkovModel model, String sequence)
+	public static void run(HMM model, String sequence)
 	{
 		DpMatrix dpMatrix = new DpMatrix(model, sequence);
 	
@@ -23,7 +23,7 @@ public class ViterbiAlgorithm
 	}
 
 	public static Pair<Double, State> runIteration(DpMatrix dpMatrix, 
-									        	   HiddenMarkovModel model, 
+									        	   HMM model, 
 									        	   String sequence)
 	{	
 		
@@ -115,7 +115,7 @@ public class ViterbiAlgorithm
 	 * @param dpMatrix the dynamic programming matrix object
 	 * @param model the HMM object
 	 */
-	public static void intiailize(DpMatrix dpMatrix, HiddenMarkovModel model)
+	public static void intiailize(DpMatrix dpMatrix, HMM model)
 	{
 		
 		// Set all elements to 0.0
@@ -131,7 +131,7 @@ public class ViterbiAlgorithm
 	}
 	
 	private static void printResults(DpMatrix dpMatrix,
-									HiddenMarkovModel model,
+									HMM model,
 									String sequence,
 									Pair<Double, State> viterbiResult)
 	{

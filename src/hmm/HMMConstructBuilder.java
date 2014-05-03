@@ -7,10 +7,11 @@ import java.util.Map;
 import common.Common;
 import data.readers.Alignments;
 
+import sequence.Reads;
 import sequence.Transcript;
 import sequence.Transcripts;
 
-public class ProfileHmmBuilder 
+public class HMMConstructBuilder 
 {
 	/*
 	 * Initial probability of emission when symbol does not match transcript
@@ -20,7 +21,7 @@ public class ProfileHmmBuilder
 	/*
 	 * The HMM under construction
 	 */
-	private HiddenMarkovModel hmm;
+	private HMM mainHmm;
 	
 	/*
 	 * Keep track of all mux states
@@ -29,9 +30,9 @@ public class ProfileHmmBuilder
 	
 	private String INSERTION_PARAMS_ID = "Inert_Params";
 	
-	public HiddenMarkovModel buildHMM(Transcripts ts, Alignments cAligns)
-	{
-		hmm = new HiddenMarkovModel();
+	public HMMConstruct buildHMM(Transcripts ts, Reads rs, Alignments cAligns)
+	{	
+		mainHmm = new HMM();
 		muxStates = new ArrayList<State>();
 		
 		StateParamsTied.tiedEmissionParams.put(INSERTION_PARAMS_ID, 
@@ -53,7 +54,7 @@ public class ProfileHmmBuilder
 		 */
 		State startState = new StateSilent();
 		startState.setId("START");
-		hmm.states.addState(startState);
+		mainHmm.states.addState(startState);
 		
 		/*
 		 * Build a profile HMM structure for each candidate alignment
@@ -83,12 +84,9 @@ public class ProfileHmmBuilder
 		}
 		startState.normalizeTransitionProbabilities();
 		
-		/*
-		 * Keeps track of the hmms constructed.
-		 */
-		Map<String, Boolean> hmmsConstructed = new HashMap<String, Boolean>();
-		
-		return hmm;
+		HMMConstruct hmmConstruct = new HMMConstruct();
+		hmmConstruct.mainHMM = mainHmm;
+		return hmmConstruct;
 	}
 	
 	public State buildHMMForAlignment(Transcript t, 
@@ -106,13 +104,13 @@ public class ProfileHmmBuilder
 		 * Create mux state with connection to all match states
 		 */
 		String muxId = "MUX_" + t.getId();
-		State muxState = hmm.getStateById(muxId);
+		State muxState = mainHmm.getStateById(muxId);
 		if (muxState == null)
 		{
 			muxState = new StateSilent();
 			muxState.setId("MUX_" + t.getId() );
 			muxStates.add(muxState);
-			hmm.states.addState(muxState);
+			mainHmm.states.addState(muxState);
 		}
 		
 		for (int i = startPos; i < startPos + 2*Common.readLength; i++)
@@ -147,7 +145,7 @@ public class ProfileHmmBuilder
 			 * If the HMM already has states for this region, then we don't 
 			 * creating states at this position.
 			 */
-			if (!hmm.states.containsState(mId))
+			if (!mainHmm.states.containsState(mId))
 			{
 				char matchedSymbol = t.getSeq().charAt(i);
 			
@@ -155,9 +153,9 @@ public class ProfileHmmBuilder
 				State iState =  createInsertState(iId, i, orientation);
 				State mState =  createMatchState(mId, matchedSymbol, i, orientation);
 			
-				hmm.states.addState(dState);
-				hmm.states.addState(iState);
-				hmm.states.addState(mState);
+				mainHmm.states.addState(dState);
+				mainHmm.states.addState(iState);
+				mainHmm.states.addState(mState);
 			}
 		}	
 	}
@@ -218,19 +216,19 @@ public class ProfileHmmBuilder
 			/*
 			 * Current and next deletion states at given position
 			 */
-			State dState = hmm.getStateById(deleteStateId(t, i, orientation));
-			State dNextState = hmm.getStateById(deleteStateId(t, i+1, orientation));
+			State dState = mainHmm.getStateById(deleteStateId(t, i, orientation));
+			State dNextState = mainHmm.getStateById(deleteStateId(t, i+1, orientation));
 			
 			/*
 			 * Current insertion state at given position
 			 */
-			State iState = hmm.getStateById(insertStateId(t, i, orientation));
+			State iState = mainHmm.getStateById(insertStateId(t, i, orientation));
 			
 			/*
 			 * Current match state at given position
 			 */
-			State mState = hmm.getStateById(matchStateId(t, i, orientation));
-			State mNextState = hmm.getStateById(matchStateId(t, i+1, orientation));
+			State mState = mainHmm.getStateById(matchStateId(t, i, orientation));
+			State mNextState = mainHmm.getStateById(matchStateId(t, i+1, orientation));
 				
 			double p = 1.0 /3.0;
 			dState.addTransition(new Transition(dState.getId(), 
@@ -262,9 +260,9 @@ public class ProfileHmmBuilder
 		{
 			if (i >= t.length()) break;
 			
-			State dState = hmm.getStateById(deleteStateId(t, i, orientation));
-			State iState = hmm.getStateById(insertStateId(t, i, orientation));
-			State mState = hmm.getStateById(matchStateId(t, i, orientation));
+			State dState = mainHmm.getStateById(deleteStateId(t, i, orientation));
+			State iState = mainHmm.getStateById(insertStateId(t, i, orientation));
+			State mState = mainHmm.getStateById(matchStateId(t, i, orientation));
 			
 			double p = 1.0 /3.0;
 			dState.addTransition(new Transition(dState.getId(), 

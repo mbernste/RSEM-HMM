@@ -29,6 +29,16 @@ public class Transition
 	}
 	
 	/**
+	 * Copy constructor
+	 */
+	public Transition(Transition t)
+	{
+		this.originId = t.originId;
+		this.destinationId = t.destinationId;
+		this.probability = t.probability;
+	}
+	
+	/**
 	 * Get the integer ID of the state this transition moves to.
 	 * 
 	 * @return the destination ID
@@ -82,6 +92,11 @@ public class Transition
 	public double getTransitionProbability()
 	{
 		return this.probability;
+	}
+	
+	public void incrementTransitionValue(double value)
+	{
+		this.probability += value;
 	}
 
 }

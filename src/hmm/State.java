@@ -46,6 +46,24 @@ public class State
 	}
 	
 	/**
+	 * Copy constructor.
+	 */
+	public State(State s)
+	{
+		this();
+		
+		for (Transition t : s.getTransitions())
+		{
+			this.transitions.put(t.getDestinationId(), new Transition(t));
+		}
+
+		for (String str : s.emissionProbs.keySet())
+		{
+			this.emissionProbs.put(str, 0.0);
+		}
+	}
+	
+	/**
 	 * @return the unique integer ID of this state
 	 */
 	public String getId()
@@ -164,7 +182,7 @@ public class State
 	 * @return the transition that moves from this state to the specified 
 	 * state, if such a transition does not exist, this method returns null
 	 */
-	public Transition findTransition(State destinationId)
+	public Transition getTransition(String destinationId)
 	{	
 		return transitions.get(destinationId);
 	}

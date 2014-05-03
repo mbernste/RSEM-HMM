@@ -1,13 +1,13 @@
 package hmm.algorithms;
 
-import hmm.HiddenMarkovModel;
+import hmm.HMM;
 import hmm.State;
 
 import java.util.ArrayList;
 
 public class ForwardAlgorithm 
 {	
-	public static void run(HiddenMarkovModel model, String sequence)
+	public static void run(HMM model, String sequence)
 	{
 		DpMatrix dpMatrix = new DpMatrix(model, sequence);
 	
@@ -25,7 +25,7 @@ public class ForwardAlgorithm
 	}
 
 	public static Double runIteration(DpMatrix dpMatrix, 
-									  HiddenMarkovModel model, 
+									  HMM model, 
 									  String sequence)
 	{	
 		
@@ -96,7 +96,7 @@ public class ForwardAlgorithm
 	 * @param dpMatrix the dynamic programming matrix object
 	 * @param model the HMM object
 	 */
-	public static void intiailize(DpMatrix dpMatrix, HiddenMarkovModel model)
+	public static void intiailize(DpMatrix dpMatrix, HMM model)
 	{
 		
 		/*
@@ -116,7 +116,7 @@ public class ForwardAlgorithm
 	}
 	
 	private static void printResults(DpMatrix dpMatrix,
-									HiddenMarkovModel model,
+									HMM model,
 									String sequence,
 									Double finalProb)
 	{

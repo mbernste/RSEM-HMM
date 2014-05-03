@@ -1,6 +1,6 @@
 package hmm.algorithms;
 
-import hmm.HiddenMarkovModel;
+import hmm.HMM;
 import hmm.State;
 
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ public class DpMatrix
 	 */
 	private DpMatrixElement[][] matrix;
 
-	public DpMatrix(HiddenMarkovModel model, String sequence)
+	public DpMatrix(HMM model, String sequence)
 	{
 		numRows = model.getNumStates();
 		numCols = sequence.length() + 1;
@@ -37,7 +37,7 @@ public class DpMatrix
 		initMatrix();
 	}
 	
-	public void initStateRowMap(HiddenMarkovModel model)
+	public void initStateRowMap(HMM model)
 	{
 		stateRowMap = new BiMap<State, Integer>();
 		

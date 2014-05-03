@@ -2,8 +2,8 @@ import data.readers.Alignments;
 import sequence.Reads;
 import sequence.Transcript;
 import sequence.Transcripts;
-import hmm.HiddenMarkovModel;
-import hmm.ProfileHmmBuilder;
+import hmm.HMM;
+import hmm.HMMConstructBuilder;
 
 
 public class TestHmmBuilder 
@@ -23,9 +23,9 @@ public class TestHmmBuilder
 		
 		Transcript t = ts.getTranscript(0);
 		
-		ProfileHmmBuilder builder = new ProfileHmmBuilder();
-		HiddenMarkovModel hmm = builder.buildHMM(ts, aligns);
+		HMMConstructBuilder builder = new HMMConstructBuilder();
+		//HMM hmm = builder.buildHMM(ts, aligns);
 		
-		System.out.println(hmm);
+		//System.out.println(hmm);
 	}
 }

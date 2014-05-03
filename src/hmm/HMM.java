@@ -3,13 +3,14 @@ package hmm;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 
-public class HiddenMarkovModel 
+public class HMM 
 {
 	protected StateContainer states;
 	private String beginStateId;
 	private String endStateId;
+
 	
-	public HiddenMarkovModel()
+	public HMM()
 	{
 		states = new StateContainer();
 	}
