@@ -56,7 +56,7 @@ public class State
 	 */
 	public State(State s)
 	{
-		this();
+		this(s.getId());
 		
 		for (Transition t : s.getTransitions())
 		{

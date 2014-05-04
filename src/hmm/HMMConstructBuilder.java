@@ -178,23 +178,33 @@ public class HMMConstructBuilder
 			 * If the HMM already has states for this region, then we don't 
 			 * creating states at this position.
 			 */
+			State dState = null;
+			State iState = null;
+			State mState = null;
+			
 			if (!mainHmm.states.containsState(mId))
 			{
 				char matchedSymbol = t.getSeq().charAt(i);
 			
-				State dState =  createDeleteState(dId, i, orient);
-				State iState =  createInsertState(iId, i, orient);
-				State mState =  createMatchState(mId, matchedSymbol, i, orient);
-			
-				mainHmm.states.addState(dState);
-				mainHmm.states.addState(iState);
-				mainHmm.states.addState(mState);
+				dState =  createDeleteState(dId, i, orient);
+				iState =  createInsertState(iId, i, orient);
+				mState =  createMatchState(mId, matchedSymbol, i, orient);
 				
-				HMM subHMM = subHMMs.get(rId);
-				subHMM.states.addState(dState);
-				subHMM.states.addState(iState);
-				subHMM.states.addState(mState);
+				mainHmm.addState(dState);
+				mainHmm.addState(iState);
+				mainHmm.addState(mState);
 			}
+			else
+			{
+				dState = mainHmm.getStateById(dId);
+				iState = mainHmm.getStateById(iId);
+				mState = mainHmm.getStateById(mId);
+			}
+				
+			HMM subHMM = subHMMs.get(rId);
+			subHMM.states.addState(dState);
+			subHMM.states.addState(iState);
+			subHMM.states.addState(mState);
 		}	
 	}
 	

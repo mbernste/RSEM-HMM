@@ -53,9 +53,7 @@ public class ForwardAlgorithm
 									  String sequence)
 	{	
 		for (int t = 1; t < dpMatrix.getNumColumns(); t++)
-		{	
-			System.out.println("I " + t);
-			
+		{				
 			/*
 			 * Iterate through all non-silent states
 			 */
@@ -117,7 +115,10 @@ public class ForwardAlgorithm
 			}
 			
 			if (debug > 1)
+			{
+				System.out.println("TIME STEP : " + t);
 				System.out.println(dpMatrix);
+			}
 		}
 		
 		/*
@@ -189,7 +190,10 @@ public class ForwardAlgorithm
 		}
 		
 		if (debug > 1)
+		{
+			System.out.println("TIME STEP : 0 (Init)");
 			System.out.println(dpMatrix);
+		}
 	}
 	
 }

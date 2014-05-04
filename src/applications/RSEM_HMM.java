@@ -37,10 +37,6 @@ public class RSEM_HMM
 	
 	private static final double EPSILON = 0.001;
 	
-	public static void main(String[] args)
-	{	
-		
-	}
 	
 	public static ExpressionLevels EM( Reads rs,
 						   			   Transcripts ts,
@@ -59,7 +55,7 @@ public class RSEM_HMM
 		{		
 			prevProbData = probData;
 			probData = probabilityOfData(rs, ts, hConstruct);	
-			
+						
 			/*
 			 * E-Step
 			 */
@@ -70,6 +66,9 @@ public class RSEM_HMM
 			 */
 			hConstruct = mStep(z, hConstruct);
 			
+			// TODO REMOVE
+			//System.out.println(hConstruct.getReadHMM("1"));
+						
 			if (debug > 0)
 				System.out.println("Current probability of data: " + probData);
 		}
@@ -103,6 +102,7 @@ public class RSEM_HMM
 																	   r.getSeq());
 				
 				double pSeq = fResult.getFirst();
+				System.out.println("PSEQ: " + pSeq); // TODO REMOVE
 				DpMatrix f = fResult.getSecond();
 				DpMatrix b = bResult.getSecond();
 				
@@ -124,37 +124,39 @@ public class RSEM_HMM
 						
 						tCount /= pSeq;
 						
-						System.out.println("CONTENTIOUS T: " + t.getOriginId());
 						z.incrementTransitionCount(t.getOriginId(), 
 												   t.getDestinationId(),
 												   tCount);
 					}
-					
 					/*
-					 * Count emissions along the read
-					 */
-					Map<Character, Double> symCounts = new HashMap<Character, Double>();
-					for (int i = 0; i < x.length(); i++)
-					{
-						for (Character c : Common.DNA_ALPHABET)
+					if (!s.isSilent())
+					{*/
+						/*
+						 * Count emissions along the read
+						 *//*
+						Map<Character, Double> symCounts = new HashMap<Character, Double>();
+						for (int i = 0; i < x.length(); i++)
 						{
-							symCounts.put(c, 0.0);
+							for (Character c : Common.DNA_ALPHABET)
+							{
+								symCounts.put(c, 0.0);
+							}
+							
+							Character symbol = x.charAt(i);
+							double val = f.getValue(s, i+1) * b.getValue(s, i+1);
+							symCounts.put(symbol, symCounts.get(symbol) + val);
 						}
 						
-						Character symbol = x.charAt(i);
-						double val = f.getValue(s, i+1) * b.getValue(s, i+1);
-						symCounts.put(symbol, symCounts.get(symbol) + val);
-					}
-					
-					/*
-					 * Update the counts in the counts data structure
-					 */
-					for (Entry<Character, Double> e : symCounts.entrySet())
-					{
-						z.incrementEmissionCount(s.getId(), 
-												 e.getKey().toString(), 
-												 e.getValue() / pSeq);
-					}
+						*//*
+						 * Update the counts in the counts data structure
+						 *//*
+						for (Entry<Character, Double> e : symCounts.entrySet())
+						{
+							z.incrementEmissionCount(s.getId(), 
+													 e.getKey().toString(), 
+													 e.getValue() / pSeq);
+						}
+					}*/
 					
 				}
 			}
@@ -228,7 +230,12 @@ public class RSEM_HMM
 			if (rHMM != null)
 			{
 				Pair<Double, DpMatrix> result = ForwardAlgorithm.run(rHMM, r.getSeq());
-				p += -Math.log(result.getFirst());
+				double pSeq = result.getFirst();
+				
+				System.out.println(r.getId() + " with P = " + pSeq );
+				
+				if (pSeq != 0)
+					p += -Math.log(pSeq);				
 			}
 		}
 		return p;

@@ -28,7 +28,7 @@ public class DpMatrix
 	private DpMatrixElement[][] matrix;
 
 	public DpMatrix(HMM model, String sequence)
-	{
+	{		
 		numRows = model.getNumStates();
 		numCols = sequence.length() + 1;
 		

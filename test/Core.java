@@ -54,10 +54,7 @@ public class Core
 		SimulatedReads rs = FASTAReader.readSimulatedReads(PATH_TO_DATA + 
 				 						 		  		   READS_DUMMY_FNAME + 
 				 						 		  		   FASTA_EXT);
-		
-		System.out.println(ts);
-		System.out.println(rs);
-		
+				
 		File samFile = new File(PATH_TO_DATA + 
 								ALIGN_DUMMY_FNAME +
 								TXT_EXT);

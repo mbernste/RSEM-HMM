@@ -10,7 +10,6 @@ public class HMMParameterCounts extends HMM
 		
 		for (State s : hmm.getStates())
 		{
-			System.out.println("BUILDING COUNTS. ADDING STATE " + s.getId());
 			this.states.addState(new State(s));
 		}
 	}
@@ -21,12 +20,12 @@ public class HMMParameterCounts extends HMM
 		{
 			for (Transition t : s.getTransitions())
 			{
-				t.setTransitionProbability(0.0);
+				t.setTransitionProbability(1.0);
 			}
 			
 			for (String str : s.getEmissionProbabilites().keySet())
 			{
-				s.addEmission(str, 0.0);
+				s.addEmission(str, 1.0);
 			}
 		}
 	}
@@ -34,10 +33,7 @@ public class HMMParameterCounts extends HMM
 	public void incrementTransitionCount(String originId, 
 										 String destId, 
 										 double value)
-	{
-		
-		// TODO REMOVE
-		System.out.println(this.states.getStateById(originId) == null);
+	{		
 		this.states.getStateById(originId)
 				   .getTransition(destId)
 				   .incrementTransitionValue(value);

@@ -33,15 +33,14 @@ public class TestHmmConstructBuilder
 		
 		HMMConstructBuilder builder = new HMMConstructBuilder();
 		HMMConstruct hmmC = builder.buildHMMConstruct(ts, rs, aligns);		
-		
-		
-		System.out.println(rs);
-		
-		String seq = rs.getRead("1").getSeq();
 				
-		HMM hmm = hmmC.getReadHMM("4");
-		Pair<Double, DpMatrix> result = BackwardAlgorithm.run(hmm, seq);
-		//Pair<Double, DpMatrix> result = ForwardAlgorithm.run(hmm, seq);
+		String seq = rs.getRead("3").getSeq();
+				
+		HMM hmm = hmmC.getReadHMM("3");
+		//Pair<Double, DpMatrix> result = BackwardAlgorithm.run(hmm, seq);
+		
+		//System.out.println(hmm);
+		Pair<Double, DpMatrix> result = ForwardAlgorithm.run(hmm, seq);
 		
 		System.out.println("FULL PROBABILITY: " + result.getFirst());
 	}
