@@ -24,7 +24,7 @@ public class TestHmmConstructBuilder
 	
 	public static void testProfileHMMBuilder()
 	{
-		Core.TestKit kit = Core.getDummyTestKit();
+		Core.TestKit kit = Core.getDummyTestKitTwo();
 		
 		Transcripts ts = kit.transcripts();
 		Reads rs = kit.reads();
@@ -35,12 +35,12 @@ public class TestHmmConstructBuilder
 		HMMConstructBuilder builder = new HMMConstructBuilder();
 		HMMConstruct hmmC = builder.buildHMMConstruct(ts, rs, aligns);		
 				
-		String seq = rs.getRead("3").getSeq();
+		String seq = rs.getRead("0").getSeq();
 				
-		HMM hmm = hmmC.getReadHMM("3");
-		//Pair<Double, DpMatrix> result = BackwardAlgorithm.run(hmm, seq);
-		
+		HMM hmm = hmmC.getReadHMM("0");
 		//System.out.println(hmm);
+		
+		//Pair<Double, DpMatrix> result = BackwardAlgorithm.run(hmm, seq);		
 		Pair<Double, DpMatrix> result = ForwardAlgorithm.run(hmm, seq);
 		
 		System.out.println("FULL PROBABILITY: " + result.getFirst());

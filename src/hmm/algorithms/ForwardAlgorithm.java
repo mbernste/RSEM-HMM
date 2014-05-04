@@ -129,8 +129,11 @@ public class ForwardAlgorithm
 		double sum = 0;
 		for (State state : model.getStates())
 		{	
-			double fValue = dpMatrix.getValue(state, dpMatrix.getNumColumns() - 1);
-			sum += fValue;
+			if (!state.isSilent())
+			{
+				double fValue = dpMatrix.getValue(state, dpMatrix.getNumColumns() - 1);
+				sum += fValue;
+			}
 		}
 		
 		return sum;
@@ -185,8 +188,7 @@ public class ForwardAlgorithm
 				 *  Set the new value in the DP matrix
 				 */
 				dpMatrix.setValue(currState, 0, newFValue);
-			}
-			
+			}	
 		}
 		
 		if (debug > 1)

@@ -20,6 +20,12 @@ public class HMMConstructBuilder
 	private static final double NON_MATCH_P = 0.05;
 	
 	/*
+	 * Factor to multiple the read-length by to determine the length of each
+	 * profile HMM
+	 */
+	private static final double FACTOR = 2.0;
+	
+	/*
 	 * The ID for the tied insertion-state emission parameters
 	 */
 	private String INSERTION_PARAMS_ID = "Inert_Params";
@@ -149,7 +155,7 @@ public class HMMConstructBuilder
 		 */
 		subHMMs.get(rId).states.addState(muxState);
 		
-		for (int i = startPos; i < startPos + 2*Common.readLength; i++)
+		for (int i = startPos; i < startPos + FACTOR*Common.readLength; i++)
 		{
 			if (i >= t.length()) break;			
 			
@@ -166,7 +172,7 @@ public class HMMConstructBuilder
 			 				int startPos, 
 			 				boolean orient)
 	{
-		for (int i = startPos; i < startPos +  2*Common.readLength; i++)
+		for (int i = startPos; i < startPos +  FACTOR*Common.readLength; i++)
 		{				
 			if (i >= t.length()) break;
 			
@@ -257,7 +263,7 @@ public class HMMConstructBuilder
 											   boolean orient)
 	{
 		
-		for (int i = startPos; i < (startPos + 2*Common.readLength) - 1; i++)
+		for (int i = startPos; i < (startPos + FACTOR*Common.readLength) - 1; i++)
 		{
 			if (i >= t.length() - 1) break;
 			
@@ -304,7 +310,7 @@ public class HMMConstructBuilder
 												p));
 		}
 		
-		for (int i = startPos; i < startPos + 2*Common.readLength; i++)
+		for (int i = startPos; i < startPos + FACTOR*Common.readLength; i++)
 		{
 			if (i >= t.length()) break;
 			

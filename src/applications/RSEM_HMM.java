@@ -41,7 +41,7 @@ public class RSEM_HMM
 	
 	public static void main(String[] args)
 	{
-		Core.TestKit kit = Core.getDummyTestKit();
+		Core.TestKit kit = Core.getDummyTestKitTwo();
 		
 		Transcripts ts = kit.transcripts();
 		Reads rs = kit.reads();
@@ -66,7 +66,8 @@ public class RSEM_HMM
 		 */
 		double probData = 1.0;
 		double prevProbData = 0.0;
-		while (Math.abs(probData - prevProbData) > EPSILON)
+		//while (Math.abs(probData - prevProbData) > EPSILON)
+		for (int i = 0; i < 2; i++)
 		{		
 			prevProbData = probData;
 			probData = probabilityOfData(rs, ts, hConstruct);	
@@ -131,7 +132,7 @@ public class RSEM_HMM
 					{
 						double tCount = 0.0;
 						for (int i = 0; i < f.getNumColumns() - 1; i++)
-						{
+						{							
 							tCount += f.getValue(s, i) * 
 									  t.getTransitionProbability() * 
 									  s.getEmissionProb(Character.toString(x.charAt(i))) *
@@ -145,7 +146,9 @@ public class RSEM_HMM
 												   tCount);
 					}
 					
-					
+					/*
+					 * Emission probabilities for non-silent states
+					 */
 					if (!s.isSilent())
 					{
 						/*
@@ -211,9 +214,14 @@ public class RSEM_HMM
 				
 				double tCount = z.getTransitionProb(origId, destId);
 								
-				hConstruct.getMainHMM().getStateById(s.getId())
+				if (sum != 0)
+					hConstruct.getMainHMM().getStateById(s.getId())
 									   .getTransition(destId)
 									   .setTransitionProbability(tCount / sum);
+				else
+					hConstruct.getMainHMM().getStateById(s.getId())
+					   .getTransition(destId)
+					   .setTransitionProbability(0.0);
 				
 				// TODO
 				/*System.out.println("T PROB: " + hConstruct.getMainHMM().getStateById(s.getId())
@@ -235,8 +243,12 @@ public class RSEM_HMM
 				for (Character c : Common.DNA_ALPHABET)
 				{
 					double eCount = z.getEmissionProb(s.getId(), c.toString()); 
-					hConstruct.getMainHMM().getStateById(s.getId())
+					if (sum != 0.0)
+						hConstruct.getMainHMM().getStateById(s.getId())
 										   .addEmission(c.toString(), eCount / sum);
+					else
+						hConstruct.getMainHMM().getStateById(s.getId())
+						   					   .addEmission(c.toString(), 0.0);
 				}
 			}
 		}

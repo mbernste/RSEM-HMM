@@ -20,7 +20,7 @@ public class BackwardAlgorithm
 		/*
 		 *  Initialize the matrix
 		 */
-		intiailize(dpMatrix, model);
+		initialize(dpMatrix, model);
 			
 		/*
 		 *  Run the algorithm
@@ -36,34 +36,7 @@ public class BackwardAlgorithm
 	{			
 		
 		for (int t = dpMatrix.getNumColumns() - 2; t >= 0; t--)
-		{				
-			/*
-			 * Compute for non-silent states
-			 */
-			for (State currState : model.getStates())
-			{
-				if (!currState.isSilent())
-				{
-					double sum = 0;
-					
-					for (State forwardState : model.getStates())
-					{
-						double eProb = model.getEmissionProb(forwardState.getId(),
-								  		Character.toString(sequence.charAt(t)));
-						
-						double bValue = dpMatrix.getValue(forwardState, t+1);
-						
-						double tProb  = model.getTransitionProb(currState.getId(),
-																forwardState.getId());
-									
-						sum += (tProb * eProb * bValue);
-					}
-					
-					// Set the new value in the DP matrix
-					dpMatrix.setValue(currState, t, sum);
-				}
-			}
-			
+		{	
 			/*
 			 * Compute silent states
 			 */
@@ -75,16 +48,76 @@ public class BackwardAlgorithm
 				double sum = 0;
 				for (State forwardState : model.getStates())
 				{
-					double bValue = dpMatrix.getValue(forwardState, t);
+					double bValue;
+					double tProb;
+					double eProb = 1.0;
 					
-					double tProb  = model.getTransitionProb( currState.getId(),
+					if (forwardState.isSilent()) // Transitions to silent states
+					{
+						bValue = dpMatrix.getValue(forwardState, t);
+					
+						tProb  = model.getTransitionProb( currState.getId(),
 															 forwardState.getId() 
-														   );				
-					sum += (tProb * bValue);
+															  );
+					}
+					else  // Transitions to non-silent states
+					{
+						eProb = model.getEmissionProb(forwardState.getId(),
+						  		Character.toString(sequence.charAt(t)));
+						
+						bValue = dpMatrix.getValue(forwardState, t+1);
+						
+						tProb  = model.getTransitionProb( currState.getId(),
+															 forwardState.getId() 
+															  );
+					}
+					sum += (tProb * eProb * bValue);
 				}
 				
 				// Set the new value in the DP matrix
 				dpMatrix.setValue(currState, t, sum);
+			}
+			
+			/*
+			 * Compute for non-silent states
+			 */
+			for (State currState : model.getStates())
+			{
+				if (!currState.isSilent())
+				{
+					double sum = 0;
+					for (State forwardState : model.getStates())
+					{
+						double bValue;
+						double tProb;
+						double eProb = 1.0;
+						
+						if (forwardState.isSilent()) // Transitions to silent states
+						{
+							bValue = dpMatrix.getValue(forwardState, t);
+						
+							tProb  = model.getTransitionProb( currState.getId(),
+															forwardState.getId() 
+															 );
+						}
+						else  // Transitions to non-silent states
+						{
+							eProb = model.getEmissionProb(forwardState.getId(),
+							  		Character.toString(sequence.charAt(t)));
+							
+							bValue = dpMatrix.getValue(forwardState, t+1);
+							
+							tProb  = model.getTransitionProb( currState.getId(),
+															forwardState.getId() 
+																  );
+						}
+									
+						sum += (tProb * eProb * bValue);
+					}
+					
+					// Set the new value in the DP matrix
+					dpMatrix.setValue(currState, t, sum);
+				}
 			}
 			
 			if (debug > 1)
@@ -100,7 +133,7 @@ public class BackwardAlgorithm
 	 * @param dpMatrix the dynamic programming matrix object
 	 * @param model the HMM object
 	 */
-	public static void intiailize(DpMatrix dpMatrix, HMM model)
+	public static void initialize(DpMatrix dpMatrix, HMM model)
 	{
 		
 		// Set all elements to 0.0
@@ -116,34 +149,36 @@ public class BackwardAlgorithm
 		 */
 		for (State state : model.getStates())
 		{
-			if (!state.isSilent())
-			{
-				dpMatrix.setValue(state, dpMatrix.getNumColumns() - 1, 1.0);
-			}
+			dpMatrix.setValue(state, dpMatrix.getNumColumns() - 1, 1.0);
 		}
 		
 		/*
 		 * Compute silent states
 		 */
+		/*
 		ArrayList<State> sortedSilent = model.getSortedSilentStates();
 		for (int j = sortedSilent.size() - 1; j >= 0; j--)
 		{
 			State currState = sortedSilent.get(j);
 			
-			double sum = 0;
+			double sum = 1.0;
 			for (State forwardState : model.getStates())
 			{
-				double bValue = dpMatrix.getValue(forwardState, dpMatrix.getNumColumns() - 1);
+				if (forwardState.isSilent())
+				{
+					double bValue = dpMatrix.getValue(forwardState, dpMatrix.getNumColumns() - 1);
 				
-				double tProb  = model.getTransitionProb( currState.getId(),
-														 forwardState.getId() 
+					double tProb  = model.getTransitionProb( currState.getId(),
+														     forwardState.getId() 
 													  );				
-				sum += (tProb * bValue);
+					sum += (tProb * bValue);
+				}
 			}
 			
 			// Set the new value in the DP matrix
 			dpMatrix.setValue(currState, dpMatrix.getNumColumns() - 1, sum);
-		}
+		}*/
+		
 		
 		// TODO THIS IS WHEN THE END STATE EXISTS
 		/*
