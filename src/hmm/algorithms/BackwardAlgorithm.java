@@ -11,7 +11,7 @@ import pair.Pair;
 
 public class BackwardAlgorithm 
 {	
-	private static int debug = 0;
+	public static int debug = 0;
 	
 	public static Pair<Double, DpMatrix> run(HMM model, String sequence)
 	{

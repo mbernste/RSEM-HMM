@@ -17,7 +17,7 @@ import pair.Pair;
  */
 public class ForwardAlgorithm 
 {	
-	private static int debug = 0;
+	public static int debug = 0;
 	
 	/**
 	 * Given a HMM model and sequence generated from the HMM, the forward 
