@@ -4,6 +4,7 @@ import rsem.model.ExpressionLevels;
 import sequence.Sequence;
 import sequence.SimulatedReads;
 import sequence.Transcripts;
+import test.Core;
 
 import applications.RSEM;
 import applications.Simulation;

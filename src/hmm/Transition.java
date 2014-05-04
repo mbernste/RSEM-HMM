@@ -35,6 +35,7 @@ public class Transition
 	{
 		this.originId = t.originId;
 		this.destinationId = t.destinationId;
+		
 		this.probability = t.probability;
 	}
 	

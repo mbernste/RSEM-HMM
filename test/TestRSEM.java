@@ -15,6 +15,7 @@ import sequence.Read;
 import sequence.SimulatedReads;
 import sequence.Transcript;
 import sequence.Transcripts;
+import test.Core;
 
 
 public class TestRSEM 

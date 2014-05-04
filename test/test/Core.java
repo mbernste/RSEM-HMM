@@ -1,3 +1,4 @@
+package test;
 import java.io.File;
 
 import rsem.model.ExpressionLevels;
@@ -29,6 +30,11 @@ public class Core
 	public static final String READS_DUMMY_FNAME = "dummy_reads";
 	public static final String ALIGN_DUMMY_FNAME = "dummy_aligns";
 	
+	public static final String TRANSCRIPT_DUMMY_FNAME_TWO = "dummy2";
+	public static final String READS_DUMMY_FNAME_TWO = "dummy2_reads";
+	public static final String ALIGN_DUMMY_FNAME_TWO = "dummy2_aligns";
+	
+	
 	public static Transcripts getSmallTranscriptSet()
 	{
 		 Transcripts ts = FASTAReader.readTranscripts(PATH_TO_DATA + 
@@ -43,6 +49,26 @@ public class Core
 					 					 READS_DUMMY_FNAME + 
 					 					 FASTA_EXT);
 		return rs;
+	}
+	
+	public static TestKit getDummyTestKitTwo()
+	{
+		Transcripts ts = FASTAReader.readTranscripts(PATH_TO_DATA + 
+				  									 TRANSCRIPT_DUMMY_FNAME_TWO + 
+				  									 FASTA_EXT);
+		
+		SimulatedReads rs = FASTAReader.readSimulatedReads(PATH_TO_DATA + 
+				 						 		  		   READS_DUMMY_FNAME_TWO + 
+				 						 		  		   FASTA_EXT);
+				
+		File samFile = new File(PATH_TO_DATA + 
+								ALIGN_DUMMY_FNAME_TWO +
+								TXT_EXT);
+		
+		
+		Alignments aligns = SAMReader.readCandidateAlignments(samFile, rs, ts);
+	
+		return new Core.TestKit(rs, ts, aligns);
 	}
 	
 	public static TestKit getDummyTestKit()

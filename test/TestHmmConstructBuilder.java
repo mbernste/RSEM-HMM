@@ -4,6 +4,7 @@ import sequence.Reads;
 import sequence.Sequence;
 import sequence.Transcript;
 import sequence.Transcripts;
+import test.Core;
 import hmm.HMM;
 import hmm.HMMConstruct;
 import hmm.HMMConstructBuilder;

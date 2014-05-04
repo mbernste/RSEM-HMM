@@ -11,6 +11,7 @@ import sequence.Sequence;
 import sequence.SimulatedReads;
 import sequence.Transcript;
 import sequence.Transcripts;
+import test.Core;
 import data.readers.Alignments;
 import data.readers.FASTAReader;
 import data.readers.SAMReader;

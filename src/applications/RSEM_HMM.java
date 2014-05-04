@@ -23,6 +23,7 @@ import sequence.Sequence;
 import sequence.SimulatedReads;
 import sequence.Transcript;
 import sequence.Transcripts;
+import test.Core;
 
 import common.Common;
 
@@ -37,6 +38,20 @@ public class RSEM_HMM
 	
 	private static final double EPSILON = 0.001;
 	
+	
+	public static void main(String[] args)
+	{
+		Core.TestKit kit = Core.getDummyTestKit();
+		
+		Transcripts ts = kit.transcripts();
+		Reads rs = kit.reads();
+		Alignments aligns = kit.alignments();
+				
+		HMMConstructBuilder builder = new HMMConstructBuilder();
+		HMMConstruct hmmC = builder.buildHMMConstruct(ts, rs, aligns);	
+				
+		RSEM_HMM.EM(rs, ts, aligns);
+	}
 	
 	public static ExpressionLevels EM( Reads rs,
 						   			   Transcripts ts,
@@ -85,7 +100,7 @@ public class RSEM_HMM
 		 * Reset the counts
 		 */
 		z.resetCounts();
-		
+				
 		/*
 		 * Calculate expected value of all emissions and transitions
 		 */
@@ -102,9 +117,10 @@ public class RSEM_HMM
 																	   r.getSeq());
 				
 				double pSeq = fResult.getFirst();
-				System.out.println("PSEQ: " + pSeq); // TODO REMOVE
+				//System.out.println("PSEQ: " + pSeq); // TODO REMOVE
 				DpMatrix f = fResult.getSecond();
 				DpMatrix b = bResult.getSecond();
+				
 				
 				for (State s : rHMM.getStates())
 				{
@@ -128,12 +144,13 @@ public class RSEM_HMM
 												   t.getDestinationId(),
 												   tCount);
 					}
-					/*
+					
+					
 					if (!s.isSilent())
-					{*/
+					{
 						/*
 						 * Count emissions along the read
-						 *//*
+						 */
 						Map<Character, Double> symCounts = new HashMap<Character, Double>();
 						for (int i = 0; i < x.length(); i++)
 						{
@@ -147,19 +164,20 @@ public class RSEM_HMM
 							symCounts.put(symbol, symCounts.get(symbol) + val);
 						}
 						
-						*//*
+						/*
 						 * Update the counts in the counts data structure
-						 *//*
+						 */
 						for (Entry<Character, Double> e : symCounts.entrySet())
 						{
 							z.incrementEmissionCount(s.getId(), 
 													 e.getKey().toString(), 
 													 e.getValue() / pSeq);
 						}
-					}*/
+					}
 					
 				}
 			}
+			
 		}
 		
 		return z;
@@ -179,6 +197,9 @@ public class RSEM_HMM
 				sum += z.getTransitionProb(t.getOriginId(), t.getDestinationId());
 			}
 			
+			// TODO
+			//System.out.println("SUM " + sum);
+			
 			/*
 			 * Update transition probabilities
 			 */
@@ -189,10 +210,15 @@ public class RSEM_HMM
 				String destId = t.getDestinationId();
 				
 				double tCount = z.getTransitionProb(origId, destId);
-				
+								
 				hConstruct.getMainHMM().getStateById(s.getId())
 									   .getTransition(destId)
 									   .setTransitionProbability(tCount / sum);
+				
+				// TODO
+				/*System.out.println("T PROB: " + hConstruct.getMainHMM().getStateById(s.getId())
+									   .getTransition(destId)
+									   .getTransitionProbability());*/
 			}
 			
 			/*
@@ -215,6 +241,9 @@ public class RSEM_HMM
 			}
 		}
 		
+		// TODO REMOVE
+		//System.out.println(hConstruct.getMainHMM());
+		
 		return hConstruct;
 	}
 	
@@ -232,7 +261,8 @@ public class RSEM_HMM
 				Pair<Double, DpMatrix> result = ForwardAlgorithm.run(rHMM, r.getSeq());
 				double pSeq = result.getFirst();
 				
-				System.out.println(r.getId() + " with P = " + pSeq );
+				// TODO REMOVE
+				//System.out.println(r.getId() + " with P = " + pSeq );
 				
 				if (pSeq != 0)
 					p += -Math.log(pSeq);				

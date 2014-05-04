@@ -20,12 +20,12 @@ public class HMMParameterCounts extends HMM
 		{
 			for (Transition t : s.getTransitions())
 			{
-				t.setTransitionProbability(1.0);
+				t.setTransitionProbability(0.00001);
 			}
 			
 			for (String str : s.getEmissionProbabilites().keySet())
 			{
-				s.addEmission(str, 1.0);
+				s.addEmission(str, 0.00001);
 			}
 		}
 	}

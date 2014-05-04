@@ -134,6 +134,8 @@ public class State
 	{
 		if (transitions.containsKey(destId))
 		{
+			// TODO REMOVE
+			//System.out.println("WHY YOU NAN?? " + transitions.get(destId).getTransitionProbability());
 			return transitions.get(destId).getTransitionProbability();
 		}
 		

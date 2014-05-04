@@ -8,6 +8,7 @@ import rsem.model.ExpectedHiddenData;
 import sequence.Sequence;
 import sequence.SimulatedReads;
 import sequence.Transcripts;
+import test.Core;
 import applications.RSEM;
 
 

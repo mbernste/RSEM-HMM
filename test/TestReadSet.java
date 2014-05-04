@@ -5,6 +5,7 @@ import sequence.Reads;
 import sequence.Sequence;
 import sequence.SimulatedReads;
 import sequence.Transcripts;
+import test.Core;
 
 public class TestReadSet 
 {
