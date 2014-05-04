@@ -19,8 +19,6 @@ import sequence.Transcripts;
 
 public class TestRSEM 
 {
-	
-	
 	public static void main(String[] args)
 	{
 		//testProbabilityOfSequence();

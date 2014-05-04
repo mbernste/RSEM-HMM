@@ -17,6 +17,8 @@ import pair.Pair;
  */
 public class ForwardAlgorithm 
 {	
+	private static int debug = 0;
+	
 	/**
 	 * Given a HMM model and sequence generated from the HMM, the forward 
 	 * algorithm computes the full probability of the sequence under the 
@@ -42,8 +44,6 @@ public class ForwardAlgorithm
 		 *  Run the algorithm
 		 */
 		Double finalProb = runIteration(dpMatrix, model, sequence);
-
-		printResults(dpMatrix, model, sequence, finalProb);
 		
 		return new Pair<Double, DpMatrix>(finalProb, dpMatrix);
 	}
@@ -52,16 +52,6 @@ public class ForwardAlgorithm
 									  HMM model, 
 									  String sequence)
 	{	
-		
-		/*
-		 * Get the states
-		 */
-		Collection<State> states = model.getStateContainer().getStates();
-		
-		//********************************************************************
-		// Fill in the Dynamic Programming matrix
-		//********************************************************************
-		
 		for (int t = 1; t < dpMatrix.getNumColumns(); t++)
 		{	
 			System.out.println("I " + t);
@@ -69,7 +59,7 @@ public class ForwardAlgorithm
 			/*
 			 * Iterate through all non-silent states
 			 */
-			for (State currState : states)
+			for (State currState : model.getStates())
 			{
 				if (!currState.isSilent())
 				{
@@ -84,7 +74,7 @@ public class ForwardAlgorithm
 					 * Sum over previous time-step
 					 */
 					double sum = 0;
-					for (State lastState : states)
+					for (State lastState : model.getStates())
 					{
 						double fValue = dpMatrix.getValue(lastState, t-1);
 						
@@ -104,32 +94,30 @@ public class ForwardAlgorithm
 			/*
 			 * Iterate through all silent states
 			 */
-			for (State currState : states)
+			for (State currState : model.getSortedSilentStates())
 			{
-				if  (currState.isSilent())
+				/*
+				 * Sum over previous time-step
+				 */
+				double sum = 0;
+				for (State lastState : model.getStates())
 				{
-					/*
-					 * Sum over previous time-step
-					 */
-					double sum = 0;
-					for (State lastState : states)
-					{
-						double fValue = dpMatrix.getValue(lastState, t);
-						
-						double tProb  = model.getTransitionProb(lastState.getId(), 
-															    currState.getId());
-						sum += (fValue * tProb);
-					}	
-					double newFValue = sum;
-						
-					/*
-					 *  Set the new value in the DP matrix
-					 */
-					dpMatrix.setValue(currState, t, newFValue);
-				}
+					double fValue = dpMatrix.getValue(lastState, t);
+					
+					double tProb  = model.getTransitionProb(lastState.getId(), 
+														    currState.getId());
+					sum += (fValue * tProb);
+				}	
+				double newFValue = sum;
+					
+				/*
+				 *  Set the new value in the DP matrix
+				 */
+				dpMatrix.setValue(currState, t, newFValue);
 			}
 			
-			System.out.println(dpMatrix);
+			if (debug > 1)
+				System.out.println(dpMatrix);
 		}
 		
 		/*
@@ -138,7 +126,7 @@ public class ForwardAlgorithm
 		 * last time step) in each state.
 		 */
 		double sum = 0;
-		for (State state : states)
+		for (State state : model.getStates())
 		{	
 			double fValue = dpMatrix.getValue(state, dpMatrix.getNumColumns() - 1);
 			sum += fValue;
@@ -171,16 +159,18 @@ public class ForwardAlgorithm
  		State beginState = model.getBeginState();
 		dpMatrix.setValue(beginState, 0, 1.0);
 		
-		Collection<State> states = model.getStateContainer().getStates();
-		for (State currState : states)
+		/*
+		 *  Set initial probabilities for silent states
+		 */
+		for (State currState : model.getSortedSilentStates())
 		{
-			if  (currState.isSilent() && currState != beginState)
+			if (currState != beginState)
 			{
 				/*
-				 * Sum over previous time-step
+				 * Sum over first time-step
 				 */
 				double sum = 0;
-				for (State lastState : states)
+				for (State lastState : model.getStates())
 				{
 					double fValue = dpMatrix.getValue(lastState, 0);
 					
@@ -195,31 +185,11 @@ public class ForwardAlgorithm
 				 */
 				dpMatrix.setValue(currState, 0, newFValue);
 			}
+			
 		}
 		
-		System.out.println(dpMatrix);
+		if (debug > 1)
+			System.out.println(dpMatrix);
 	}
 	
-	private static void printResults(DpMatrix dpMatrix,
-									HMM model,
-									String sequence,
-									Double finalProb)
-	{
-		for (int t = 0; t < sequence.length(); t++)
-		{
-			for (State state : model.getStateContainer().getStates())
-			{
-				if (!state.equals(model.getBeginState()) &&
-					!state.equals(model.getEndState()))
-				{
-					System.out.println("alpha for state " + state.getId() + 
-						" time " + (t) + ": " + 
-						dpMatrix.getValue(state, t));
-				}
-			}
-			System.out.println("\n-------------------");
-		}
-		
-		System.out.println("Forward probability: " + finalProb);
-	}
 }

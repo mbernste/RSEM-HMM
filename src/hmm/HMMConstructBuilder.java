@@ -128,7 +128,6 @@ public class HMMConstructBuilder
 		/*
 		 * Build profile-HMM structure
 		 */
-		System.out.println("\nSTART BUILDING TRANS " + t.getId() + " STARTING AT " + startPos);
 		buildStates(rId, t, startPos, orient);
 		createInterSeqeunceTransitions(t, startPos, orient);
 		
@@ -195,12 +194,6 @@ public class HMMConstructBuilder
 				subHMM.states.addState(dState);
 				subHMM.states.addState(iState);
 				subHMM.states.addState(mState);
-				
-				if (rId.equals("0"))
-				{
-					System.out.println("ADDED " + dState.getId() + " TO SUB-HMM " + rId);		
-					System.out.println(subHMM);
-				}
 			}
 		}	
 	}

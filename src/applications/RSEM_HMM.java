@@ -1,13 +1,22 @@
 package applications;
 
+import hmm.HMM;
+import hmm.HMMConstruct;
+import hmm.HMMConstructBuilder;
+import hmm.HMMParameterCounts;
+import hmm.State;
+import hmm.Transition;
+import hmm.algorithms.BackwardAlgorithm;
+import hmm.algorithms.DpMatrix;
+import hmm.algorithms.ForwardAlgorithm;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import pair.Pair;
-import rsem.model.ExpectedHiddenData;
 import rsem.model.ExpressionLevels;
-import rsem.model.no_indels.SubstitutionMatrix;
 import sequence.Read;
 import sequence.Reads;
 import sequence.Sequence;
@@ -24,7 +33,7 @@ import data.readers.SAMReader;
 
 public class RSEM_HMM 
 {
-private static int debug = 1;
+	private static int debug = 1;
 	
 	private static final double EPSILON = 0.001;
 	
@@ -35,13 +44,11 @@ private static int debug = 1;
 	
 	public static ExpressionLevels EM( Reads rs,
 						   			   Transcripts ts,
-						   			   Alignments cAligns,
-						   			   ExpressionLevels pEl,
-						   			   SubstitutionMatrix pM) // TODO INITILIZE PARAMS ELSEWHERE
+						   			   Alignments cAligns) 
 	{	
-		ExpectedHiddenData z = null;
-		//ExpressionLevels pEl = new ExpressionLevels(ts);
-		//SubstitutionMatrix pM = new SubstitutionMatrix();
+		HMMConstructBuilder builder = new HMMConstructBuilder();
+		HMMConstruct hConstruct = builder.buildHMMConstruct(ts, rs, cAligns);
+		HMMParameterCounts z = new HMMParameterCounts(hConstruct.getMainHMM());
 		
 		/*
 		 *  Repeat E-Step & M-Step until convergence
@@ -49,189 +56,181 @@ private static int debug = 1;
 		double probData = 1.0;
 		double prevProbData = 0.0;
 		while (Math.abs(probData - prevProbData) > EPSILON)
-		{
-			// TODO: Implement Baum-welch here!
-		
+		{		
 			prevProbData = probData;
-			probData = probabilityOfData(rs, ts, cAligns, z, pEl, pM);	
+			probData = probabilityOfData(rs, ts, hConstruct);	
+			
+			/*
+			 * E-Step
+			 */
+			z = eStep(rs, z, hConstruct);
+			
+			/*
+			 * M-Step
+			 */
+			hConstruct = mStep(z, hConstruct);
 			
 			if (debug > 0)
 				System.out.println("Current probability of data: " + probData);
 		}
 
-		return pEl;
+		ExpressionLevels el = new ExpressionLevels(ts);
+		return el;
 	}
 	
-	public static ExpectedHiddenData eStep(Reads rs, 
-							 Transcripts ts,
-							 Alignments cAligns,
-							 ExpressionLevels pEl,
-							 SubstitutionMatrix pM)
+	public static HMMParameterCounts eStep(Reads rs, 
+							 			   HMMParameterCounts z,
+							 			   HMMConstruct hConstruct)
 	{ 
-		ExpectedHiddenData z = new ExpectedHiddenData(rs, ts);
-		
-		for (Object[] o : cAligns.getAlignments())
-		{
-			String readId = (String) o[0];
-			String transId = (String) o[1];
-			Integer startPos = (Integer) o[2];
-			Boolean orientation = (Boolean) o[3];
-			
-			double pSequence = probabilityOfSequence(rs.getRead(readId), 
-													 ts.getTranscript(transId),
-													 startPos,
-													 orientation,
-													 pM);						
-			
-			/*
-			 *  Multiply probability of sequence by the expression level of the
-			 *  reference transcript it is aligned to
-			 */
-			double finalP = pSequence * (pEl.getExpressionLevel(transId) / 
-										 ts.getSequence(transId).length());
-			
-			z.setValue(readId, transId, startPos, orientation, finalP);
-		}
+		/*
+		 * Reset the counts
+		 */
+		z.resetCounts();
 		
 		/*
-		 *	Normalize 
+		 * Calculate expected value of all emissions and transitions
 		 */
-		z.normalizeOverAllReads();
-		
-		return z;
-	}
-	
-	public static Pair<ExpressionLevels, SubstitutionMatrix> mStep(Reads rs, 
-																   Transcripts ts, 
-																   ExpectedHiddenData z)
-	{
-		/*
-		 *	Calculate the new estimate of the expression levels parameters
-		 */
-		ExpressionLevels pEl = new ExpressionLevels(ts);
-		for (Sequence s : ts.getSequences())
+		for (Sequence r : rs.getSequences())
 		{
-			String tId = s.getId();
-			double sumOverT = z.sumOverTranscript(tId);
-			pEl.setExpressionLevel(tId, sumOverT / rs.size());
-		}
-		// TODO REMOVE
-		//System.out.println(pEl);
-		
-		/*
-		 *  Count occurrences of each pair of bases aligned at each position 
-		 *  of the read.  Also, count occurrence of each base appearing
-		 *  along the transcript where there is a read aligned. 
-		 */
-		SubstitutionMatrix pM = new SubstitutionMatrix();
-		double sum = 0.0;
-		for (int p = 0; p < Common.readLength; p++)
-		{
-			for (char t : Common.DNA_ALPHABET)
+			HMM rHMM = hConstruct.getReadHMM(r.getId());
+			
+			if (rHMM != null)
 			{
-				double total = z.countTranscriptBaseOccurrences(t, p);
+				String x = r.getSeq();
+				Pair<Double, DpMatrix> fResult = ForwardAlgorithm.run(rHMM, 
+																	  r.getSeq());
+				Pair<Double, DpMatrix> bResult = BackwardAlgorithm.run(rHMM, 
+																	   r.getSeq());
 				
-				for (char r : Common.DNA_ALPHABET)
+				double pSeq = fResult.getFirst();
+				DpMatrix f = fResult.getSecond();
+				DpMatrix b = bResult.getSecond();
+				
+				for (State s : rHMM.getStates())
 				{
-					double numPairs = z.countAlignedBasePairs(r, t, p);
-					pM.setValue(r, t, p, (numPairs + 1) / (total + 4));
+					/*
+					 * Calculate expected counts of the transitions
+					 */
+					for (Transition t : s.getTransitions())
+					{
+						double tCount = 0.0;
+						for (int i = 0; i < f.getNumColumns() - 1; i++)
+						{
+							tCount += f.getValue(s, i) * 
+									  t.getTransitionProbability() * 
+									  s.getEmissionProb(Character.toString(x.charAt(i))) *
+									  b.getValue(s, i+1);
+						}
+						
+						tCount /= pSeq;
+						
+						System.out.println("CONTENTIOUS T: " + t.getOriginId());
+						z.incrementTransitionCount(t.getOriginId(), 
+												   t.getDestinationId(),
+												   tCount);
+					}
+					
+					/*
+					 * Count emissions along the read
+					 */
+					Map<Character, Double> symCounts = new HashMap<Character, Double>();
+					for (int i = 0; i < x.length(); i++)
+					{
+						for (Character c : Common.DNA_ALPHABET)
+						{
+							symCounts.put(c, 0.0);
+						}
+						
+						Character symbol = x.charAt(i);
+						double val = f.getValue(s, i+1) * b.getValue(s, i+1);
+						symCounts.put(symbol, symCounts.get(symbol) + val);
+					}
+					
+					/*
+					 * Update the counts in the counts data structure
+					 */
+					for (Entry<Character, Double> e : symCounts.entrySet())
+					{
+						z.incrementEmissionCount(s.getId(), 
+												 e.getKey().toString(), 
+												 e.getValue() / pSeq);
+					}
+					
 				}
 			}
 		}
 		
-		// TODO REMOVE
-		//System.out.println(pM);
-				
-		return new Pair<ExpressionLevels, SubstitutionMatrix>(pEl, pM);
+		return z;
 	}
 	
-	public static double probabilityOfSequence(Read r, 
-										 Transcript t,
-										 int startPos,
-										 boolean orientation,
-										 SubstitutionMatrix pM)
-	{		
-		//System.out.println(r.getSeq());
-		//System.out.println(t.getSeq().subSequence(startPos, startPos + Common.READ_LENGTH) + "\n");
-		
-		// Total probability of sequence
-		double p = 1.0;
-		
-		String rSeq = r.getSeq();
-		String tSeq = t.getSeq();
-		
-		if (orientation == Common.REVERSE_COMPLIMENT_ORIENTATION)
-		{
-			tSeq = Common.reverseCompliment(tSeq);
-			int rcStartPos = tSeq.length() - (startPos + rSeq.length());
-			
-			for (int i = 0; i < rSeq.length(); i++)
-			{
-				char rSymbol = rSeq.charAt(i);
-				char tSymbol = tSeq.charAt(rcStartPos + i);
-				
-				p *= pM.getValue(i, rSymbol, tSymbol);
-			}
-		}
-		else if (orientation == Common.FORWARD_ORIENTATION)
-		{
-			for (int i = 0; i < rSeq.length(); i++)
-			{
-				char rSymbol = rSeq.charAt(i);
-				char tSymbol = tSeq.charAt(startPos + i);
-				
-				p *= pM.getValue(i, rSymbol, tSymbol);
-			}
-		}
-		
-		return p;
-	}
-	
-	private static double probabilityOfData(
-									 Reads rs, 
-									 Transcripts ts,
-									 Alignments cAligns,
-									 ExpectedHiddenData z,
-									 ExpressionLevels pEl,
-									 SubstitutionMatrix pM)
+	public static HMMConstruct mStep(HMMParameterCounts z, 
+									 HMMConstruct hConstruct)
 	{
-		/*
-		 * Map that will be used to store all
-		 * partial computations of each sequence when calculating the total 
-		 * probability of the data.
-		 */
-		Map<String, Double> pSequences = new HashMap<String, Double>();
-		for (Sequence s : rs.getSequences())
+		for (State s : hConstruct.getMainHMM().getStates())
 		{
-			pSequences.put(s.getId(), 0.0);
+			/*
+			 * Sum counts over transitions outgoing from this state
+			 */
+			double sum = 0.0;
+			for (Transition t : s.getTransitions())
+			{
+				sum += z.getTransitionProb(t.getOriginId(), t.getDestinationId());
+			}
+			
+			/*
+			 * Update transition probabilities
+			 */
+			for (Transition t : s.getTransitions())
+			{
+				
+				String origId = t.getOriginId();
+				String destId = t.getDestinationId();
+				
+				double tCount = z.getTransitionProb(origId, destId);
+				
+				hConstruct.getMainHMM().getStateById(s.getId())
+									   .getTransition(destId)
+									   .setTransitionProbability(tCount / sum);
+			}
+			
+			/*
+			 * Update emission probabilities
+			 */
+			sum = 0.0;
+			if (!s.isSilent())
+			{
+				for (Character c : Common.DNA_ALPHABET)
+				{
+					sum += z.getEmissionProb(s.getId(), c.toString());
+				}
+				
+				for (Character c : Common.DNA_ALPHABET)
+				{
+					double eCount = z.getEmissionProb(s.getId(), c.toString()); 
+					hConstruct.getMainHMM().getStateById(s.getId())
+										   .addEmission(c.toString(), eCount / sum);
+				}
+			}
 		}
 		
-		double p = 1.0;
-		
-		for (Object[] o : cAligns.getAlignments())
+		return hConstruct;
+	}
+	
+	public static double probabilityOfData( Reads rs, 
+									 	 	Transcripts ts,
+									 	 	HMMConstruct hConstruct)
+	{
+		double p = 0.0;
+		for (Sequence r : rs.getSequences())
 		{
-			String readId = (String) o[0];
-			String transId = (String) o[1];
-			Integer startPos = (Integer) o[2];
-			Boolean orientation = (Boolean) o[3];
+			HMM rHMM = hConstruct.getReadHMM(r.getId());
 			
-			double pSequence = probabilityOfSequence(rs.getRead(readId), 
-					 ts.getTranscript(transId),
-					 startPos,
-					 orientation,
-					 pM);	
-			
-			double zVal = z.getValue(readId, transId, startPos, orientation);
-			double partialCalculation = pSequence * zVal;
-			
-			pSequences.put(readId, pSequences.get(readId) + partialCalculation);
+			if (rHMM != null)
+			{
+				Pair<Double, DpMatrix> result = ForwardAlgorithm.run(rHMM, r.getSeq());
+				p += -Math.log(result.getFirst());
+			}
 		}
-		
-		for (Double val : pSequences.values())
-		{
-			p += -Math.log(val);
-		}
-		
 		return p;
 	}
 }

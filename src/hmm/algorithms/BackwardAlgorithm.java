@@ -6,10 +6,14 @@ import hmm.State;
 import java.util.Collection;
 import java.util.ArrayList;
 
+import pair.Pair;
+
 
 public class BackwardAlgorithm 
 {	
-	public static void run(HMM model, String sequence)
+	private static int debug = 0;
+	
+	public static Pair<Double, DpMatrix> run(HMM model, String sequence)
 	{
 		DpMatrix dpMatrix = new DpMatrix(model, sequence);
 	
@@ -22,41 +26,32 @@ public class BackwardAlgorithm
 		 *  Run the algorithm
 		 */
 		Double finalProb = runIteration(dpMatrix, model, sequence);
-		
-		printResults(dpMatrix, model, sequence, finalProb);
+				
+		return new Pair<Double, DpMatrix>(finalProb, dpMatrix);
 	}
 
-	public static Double runIteration(DpMatrix dpMatrix, 
+	public static double runIteration(DpMatrix dpMatrix, 
 									HMM model, 
 									String sequence)
-	{	
+	{			
 		
-		// Get the states
-		Collection<State> states = model.getStateContainer().getStates();
-		
-		//********************************************************************
-		// Fill in the Dynamic Programming matrix
-		//********************************************************************
-		
-		for (int i = dpMatrix.getNumColumns() - 2; i >= 0; i--)
-		{	
-			System.out.println("I " + i);
-			
+		for (int t = dpMatrix.getNumColumns() - 2; t >= 0; t--)
+		{				
 			/*
 			 * Compute for non-silent states
 			 */
-			for (State currState : states)
+			for (State currState : model.getStates())
 			{
 				if (!currState.isSilent())
 				{
 					double sum = 0;
 					
-					for (State forwardState : states)
+					for (State forwardState : model.getStates())
 					{
 						double eProb = model.getEmissionProb(forwardState.getId(),
-								  		Character.toString(sequence.charAt(i)));
+								  		Character.toString(sequence.charAt(t)));
 						
-						double bValue = dpMatrix.getValue(forwardState, i+1);
+						double bValue = dpMatrix.getValue(forwardState, t+1);
 						
 						double tProb  = model.getTransitionProb(currState.getId(),
 																forwardState.getId());
@@ -65,37 +60,38 @@ public class BackwardAlgorithm
 					}
 					
 					// Set the new value in the DP matrix
-					dpMatrix.setValue(currState, i, sum);
+					dpMatrix.setValue(currState, t, sum);
 				}
 			}
 			
 			/*
 			 * Compute silent states
 			 */
-			for (State currState : states)
+			ArrayList<State> sortedSilent = model.getSortedSilentStates();
+			for (int j = sortedSilent.size() - 1; j >= 0; j--)
 			{
-				if (currState.isSilent())
+				State currState = sortedSilent.get(j);
+				
+				double sum = 0;
+				for (State forwardState : model.getStates())
 				{
-					double sum = 0;
-					for (State forwardState : states)
-					{
-						double bValue = dpMatrix.getValue(forwardState, i);
-						
-						double tProb  = model.getTransitionProb( currState.getId(),
-																 forwardState.getId() 
-															  );				
-						sum += (tProb * bValue);
-					}
+					double bValue = dpMatrix.getValue(forwardState, t);
 					
-					// Set the new value in the DP matrix
-					dpMatrix.setValue(currState, i, sum);
+					double tProb  = model.getTransitionProb( currState.getId(),
+															 forwardState.getId() 
+														   );				
+					sum += (tProb * bValue);
 				}
+				
+				// Set the new value in the DP matrix
+				dpMatrix.setValue(currState, t, sum);
 			}
+			
+			if (debug > 1)
+				System.out.println(dpMatrix);
 		}
-		
-		System.out.println(dpMatrix + "\n");
-		
-		return dpMatrix.getValue(model.getBeginState(), 0);		
+				
+		return dpMatrix.getValue(model.getBeginState(), 0);
 	}
 	
 	/**
@@ -118,12 +114,35 @@ public class BackwardAlgorithm
 		 * If no end state, then set the probability at the last time step 
 		 * for all states should be 1.0
 		 */
-		for (State state : model.getStateContainer().getStates())
+		for (State state : model.getStates())
 		{
 			if (!state.isSilent())
 			{
 				dpMatrix.setValue(state, dpMatrix.getNumColumns() - 1, 1.0);
 			}
+		}
+		
+		/*
+		 * Compute silent states
+		 */
+		ArrayList<State> sortedSilent = model.getSortedSilentStates();
+		for (int j = sortedSilent.size() - 1; j >= 0; j--)
+		{
+			State currState = sortedSilent.get(j);
+			
+			double sum = 0;
+			for (State forwardState : model.getStates())
+			{
+				double bValue = dpMatrix.getValue(forwardState, dpMatrix.getNumColumns() - 1);
+				
+				double tProb  = model.getTransitionProb( currState.getId(),
+														 forwardState.getId() 
+													  );				
+				sum += (tProb * bValue);
+			}
+			
+			// Set the new value in the DP matrix
+			dpMatrix.setValue(currState, dpMatrix.getNumColumns() - 1, sum);
 		}
 		
 		// TODO THIS IS WHEN THE END STATE EXISTS
@@ -140,25 +159,5 @@ public class BackwardAlgorithm
 		}*/
 	}
 	
-	private static void printResults(DpMatrix dpMatrix,
-									HMM model,
-									String sequence,
-									Double finalProb)
-	{
-		for (int timestep = sequence.length() - 1; timestep >= 1; timestep--)
-		{
-			for (State state : model.getStateContainer().getStates())
-			{
-				if (!state.equals(model.getBeginState()) &&
-					!state.equals(model.getEndState()))
-				{
-					System.out.println("beta for state " + state.getId() + 
-						" time " + (timestep) + ": " + 
-						dpMatrix.getValue(state, timestep));
-				}
-			}
-		}
-		
-		System.out.println("Backward probability: " + finalProb);
-	}
+	
 }

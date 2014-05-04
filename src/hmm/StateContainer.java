@@ -32,6 +32,20 @@ public class StateContainer
 		return states.values();
 	}
 	
+	/*
+	 * TODO OPTIMIZE THIS!!!!
+	 */
+	public Collection<State> getSilentStates()
+	{
+		ArrayList<State> silent = new ArrayList<State>();
+		for (State s : states.values())
+		{
+			if (s.isSilent)
+				silent.add(s);
+		}
+		return silent;
+	}
+	
 	/**
 	 * Add a state to this container.
 	 * 

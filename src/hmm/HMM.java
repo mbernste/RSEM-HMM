@@ -1,6 +1,9 @@
 package hmm;
 
+import hmm.algorithms.SortSilentStates;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map.Entry;
 
 public class HMM 
@@ -64,6 +67,21 @@ public class HMM
 	public StateContainer getStateContainer()
 	{
 		return this.states;
+	}
+	
+	public Collection<State> getStates()
+	{
+		return this.states.getStates();
+	}
+	
+	public Collection<State> getSilentStates()
+	{
+		return this.states.getSilentStates();
+	}
+	
+	public ArrayList<State> getSortedSilentStates()
+	{
+		return SortSilentStates.sortSilentStates(this);
 	}
 	
 	public State getStateById(String id)
