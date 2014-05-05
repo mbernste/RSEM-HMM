@@ -46,7 +46,7 @@ public class TestHiddenData
 		SimulatedReads rs = FASTAReader.readSimulatedReads(readsFName);
 		Transcripts ts = Core.getSmallTranscriptSet();
 		
-		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts);		
+		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts, false);		
 		
 		ExpressionLevels el = Core.buildDummyExpressionLevels(ts);
 		System.out.println(el);
@@ -75,7 +75,7 @@ public class TestHiddenData
 		SimulatedReads rs = FASTAReader.readSimulatedReads(readsFName);
 		Transcripts ts = Core.getSmallTranscriptSet();
 		
-		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts);		
+		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts, false);		
 		
 		ExpressionLevels el = Core.buildDummyExpressionLevels(ts);
 		System.out.println(el);

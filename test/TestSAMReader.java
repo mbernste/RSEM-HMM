@@ -36,7 +36,7 @@ public class TestSAMReader
 		}
 		
 		Transcripts ts = Core.getSmallTranscriptSet();
-		Alignments aligns = SAMReader.readCandidateAlignments(samFile, reads, ts);		
+		Alignments aligns = SAMReader.readCandidateAlignments(samFile, reads, ts, true);		
 	}
 
 }

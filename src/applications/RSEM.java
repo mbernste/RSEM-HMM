@@ -31,40 +31,45 @@ public class RSEM
 	
 	public static void main(String[] args)
 	{	
-		SimulatedReads reads = FASTAReader.readSimulatedReads(args[0]);
-		MappingReader.recoverMapping(args[1], reads);
+		SimulatedReads rs = FASTAReader.readSimulatedReads(args[0]);
+		MappingReader.recoverMapping(args[1], rs);
 		
-		Transcripts transcripts = FASTAReader.readTranscripts(args[2]);
+		Transcripts ts = FASTAReader.readTranscripts(args[2]);
 
-		File samFile = new File(args[1]);
+		File samFile = new File(args[3]);
 		Alignments aligns = SAMReader.readCandidateAlignments(samFile, 
-															  reads,
-															  transcripts);
+															  rs, 
+															  ts, 
+															  false);
+		
+		SubstitutionMatrix pM = new SubstitutionMatrix();
+		ExpressionLevels el = new ExpressionLevels(ts);
 		
 		/*
-		ExpressionLevels el = TestCommon.buildDummyExpressionLevels(ts);
-		SubstitutionMatrix pM = Core.buildDummySubstitutionMatrix();
-		RSEM.EM(rs, ts, cAligns, el, pM);	
-		*/
+		 * Run RSEM
+		 */
+		ExpressionLevels result = RSEM.EM(rs, ts, aligns, el, pM);	
+		
+		/*
+		 * Print the resultant expression levels
+		 */
+		System.out.println(result);
 	}
 	
 	public static ExpressionLevels EM( Reads rs,
 						   			   Transcripts ts,
 						   			   Alignments cAligns,
 						   			   ExpressionLevels pEl,
-						   			   SubstitutionMatrix pM) // TODO INITILIZE PARAMS ELSEWHERE
+						   			   SubstitutionMatrix pM)
 	{	
 		ExpectedHiddenData z = null;
-		//ExpressionLevels pEl = new ExpressionLevels(ts);
-		//SubstitutionMatrix pM = new SubstitutionMatrix();
 		
 		/*
 		 *  Repeat E-Step & M-Step until convergence
 		 */
 		double probData = 1.0;
 		double prevProbData = 0.0;
-		//while (Math.abs(probData - prevProbData) > EPSILON)
-		for (int i = 0; i < 20; i++)
+		while (Math.abs(probData - prevProbData) > EPSILON)
 		{
 			/*
 			 * E-Step
@@ -142,8 +147,6 @@ public class RSEM
 			double sumOverT = z.sumOverTranscript(tId);
 			pEl.setExpressionLevel(tId, sumOverT / rs.size());
 		}
-		// TODO REMOVE
-		//System.out.println(pEl);
 		
 		/*
 		 *  Count occurrences of each pair of bases aligned at each position 
@@ -151,7 +154,6 @@ public class RSEM
 		 *  along the transcript where there is a read aligned. 
 		 */
 		SubstitutionMatrix pM = new SubstitutionMatrix();
-		double sum = 0.0;
 		for (int p = 0; p < Common.readLength; p++)
 		{
 			for (char t : Common.DNA_ALPHABET)
@@ -165,10 +167,7 @@ public class RSEM
 				}
 			}
 		}
-		
-		// TODO REMOVE
-		//System.out.println(pM);
-				
+						
 		return new Pair<ExpressionLevels, SubstitutionMatrix>(pEl, pM);
 	}
 	
@@ -177,10 +176,7 @@ public class RSEM
 										 int startPos,
 										 boolean orientation,
 										 SubstitutionMatrix pM)
-	{		
-		//System.out.println(r.getSeq());
-		//System.out.println(t.getSeq().subSequence(startPos, startPos + Common.READ_LENGTH) + "\n");
-		
+	{				
 		// Total probability of sequence
 		double p = 1.0;
 		
@@ -228,9 +224,10 @@ public class RSEM
 		 * probability of the data.
 		 */
 		Map<String, Double> pSequences = new HashMap<String, Double>();
-		for (Sequence s : rs.getSequences())
+		for (Object[] o : cAligns.getAlignments())
 		{
-			pSequences.put(s.getId(), 0.0);
+			String readId = (String) o[0];
+			pSequences.put(readId, 0.0);
 		}
 		
 		double p = 1.0;
@@ -249,6 +246,7 @@ public class RSEM
 					 pM);	
 			
 			double zVal = z.getValue(readId, transId, startPos, orientation);
+			
 			double partialCalculation = pSequence * zVal;
 			
 			pSequences.put(readId, pSequences.get(readId) + partialCalculation);

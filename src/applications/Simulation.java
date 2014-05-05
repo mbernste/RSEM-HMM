@@ -151,9 +151,6 @@ public class Simulation
 			Transcript t = sourceTs.getTranscript( tId );
 			String tSeq = t.getSeq();
 			
-			System.out.println("TRANSCRIPT!!! \n" + t);
-			System.out.println(tSeq == null); //TODO
-			
 			/*
 			 * Randomly use the reverse compliment
 			 */
@@ -165,24 +162,19 @@ public class Simulation
 			/*
 			 *  Generate random starting position from uniform distribution 
 			 */
-			int startPos = Common.RNG.nextInt(t.length());
-			String readSeq;
+			int startPos = Common.RNG.nextInt(t.length() - Common.readLength);
 			
 			/*
 			 *  Generate the read sequence 
 			 */
-			if (t.length() - startPos < Common.readLength)  
-			{
-				readSeq = t.getSeq().substring(startPos, t.length());
-			}
-			else
-			{
-				readSeq = t.getSeq().substring(startPos, startPos + Common.readLength);
-			}
+			String readSeq = t.getSeq().substring(startPos, 
+										   		  startPos + Common.readLength);
+			
 				
 			
-			reads.addRead(new SimulatedRead(new Pair<String, Integer>(t.getId(), startPos), 
-								readSeq));
+			reads.addRead(new SimulatedRead(new Pair<String, Integer>(t.getId(), 
+																	  startPos), 
+																	  readSeq));
 		}
 
 		return reads;
@@ -223,7 +215,8 @@ public class Simulation
 		if (rLength < seq.length())
 		{
 			int index = Common.RNG.nextInt(seq.length() - rLength);		
-			return seq.substring(0, index) + seq.substring(index+rLength, seq.length());
+			return seq.substring(0, index) + seq.substring(index+rLength, 
+														   seq.length());
 		}
 		else
 		{
@@ -243,7 +236,8 @@ public class Simulation
 			insert += Common.DNA_ALPHABET[Common.RNG.nextInt(4)];
 		}
 		
-		return seq.substring(0, index) + insert + seq.substring(index, seq.length());
+		return seq.substring(0, index) + insert + seq.substring(index, 
+																seq.length());
 	}
 	
 	public static int sampleGeometricDistribution(double param)

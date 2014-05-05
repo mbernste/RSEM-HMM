@@ -66,7 +66,7 @@ public class Core
 								TXT_EXT);
 		
 		
-		Alignments aligns = SAMReader.readCandidateAlignments(samFile, rs, ts);
+		Alignments aligns = SAMReader.readCandidateAlignments(samFile, rs, ts, true);
 	
 		return new Core.TestKit(rs, ts, aligns);
 	}
@@ -86,7 +86,7 @@ public class Core
 								TXT_EXT);
 		
 		
-		Alignments aligns = SAMReader.readCandidateAlignments(samFile, rs, ts);
+		Alignments aligns = SAMReader.readCandidateAlignments(samFile, rs, ts, true);
 	
 		return new Core.TestKit(rs, ts, aligns);
 	}

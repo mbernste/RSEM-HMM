@@ -34,7 +34,10 @@ public class SubstitutionMatrix
 			{
 				for (int t = 0; t < aLength; t++)
 				{
-					values[p][r][t] = 0.0;
+					if (Common.DNA_ALPHABET[r] == Common.DNA_ALPHABET[t])
+						values[p][r][t] = 0.85;
+					else
+						values[p][r][t] = 0.05;
 				}
 			}
 		}

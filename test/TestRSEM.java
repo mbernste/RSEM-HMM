@@ -80,7 +80,7 @@ public class TestRSEM
 		SimulatedReads rs = FASTAReader.readSimulatedReads(readsFName);
 		Transcripts ts = Core.getSmallTranscriptSet();
 		
-		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts);		
+		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts, false);		
 		
 		ExpressionLevels el = Core.buildDummyExpressionLevels(ts);
 		System.out.println(el);
@@ -103,7 +103,7 @@ public class TestRSEM
 		SimulatedReads rs = FASTAReader.readSimulatedReads(readsFName);
 		Transcripts ts = Core.getSmallTranscriptSet();
 		
-		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts);		
+		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts, false);		
 		
 		ExpressionLevels el = Core.buildDummyExpressionLevels(ts);
 		System.out.println("\n ------- EXPRESSION LEVELS -------\n" + el);
@@ -116,9 +116,7 @@ public class TestRSEM
 	}
 	
 	public static void testEM()
-	{
-		SubstitutionMatrix pM = Core.buildDummySubstitutionMatrix();
-		
+	{	
 		final String samFName = "./data/bowtie/NM_small/bowtie_small_25_augmented.txt";
 		File samFile = new File(samFName);
 		
@@ -131,9 +129,13 @@ public class TestRSEM
 		SimulatedReads rs = FASTAReader.readSimulatedReads(readsFName);
 		Transcripts ts = Core.getSmallTranscriptSet();
 		
-		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts);	
+		Alignments cAligns = SAMReader.readCandidateAlignments(samFile, rs, ts, false);	
 		System.out.println(cAligns);
-		ExpressionLevels el = Core.buildDummyExpressionLevels(ts);
+		
+		//SubstitutionMatrix pM = new SubstitutionMatrix();
+		SubstitutionMatrix pM = Core.buildDummySubstitutionMatrix();
+		//ExpressionLevels el = Core.buildDummyExpressionLevels(ts);
+		ExpressionLevels el = new ExpressionLevels(ts);
 		
 		RSEM.EM(rs, ts, cAligns, el, pM);	
 	}

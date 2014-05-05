@@ -12,7 +12,7 @@ import common.Common;
 
 public class ExpectedHiddenData 
 {
-	private static int debug = 2;
+	private static int debug = 0;
 	
 	/**
 	 * The data structure for storing all of the probability values
