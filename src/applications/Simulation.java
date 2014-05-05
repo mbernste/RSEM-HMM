@@ -9,6 +9,7 @@ import org.apache.commons.math3.distribution.GammaDistribution;
 
 import pair.Pair;
 import rsem.model.ExpressionLevels;
+import sequence.Reads;
 import sequence.Sequence;
 import sequence.SimulatedRead;
 import sequence.SimulatedReads;
@@ -39,9 +40,11 @@ public class Simulation
 			int numReads = Integer.parseInt(args[4]);
 			
 			Transcripts ts = FASTAReader.readTranscripts(args[5]);
-			ExpressionLevels trueEl = generateExpressionLevels(ts);
+			ExpressionLevels generatorEl = generateExpressionLevels(ts);
 	
-			SimulatedReads rs = simulateReads(ts, trueEl, numReads, indels);
+			SimulatedReads rs = simulateReads(ts, generatorEl, numReads, indels);
+			
+			ExpressionLevels trueEl = computeTrueExpressionLevels(rs, ts);
 	
 			File fastaFile = new File(args[6]);
 			FileWriter.writeToFile(fastaFile, rs.fastaFormat());
@@ -250,5 +253,31 @@ public class Simulation
 			else
 				result++;
 		}
+	}
+	
+	public static ExpressionLevels computeTrueExpressionLevels(SimulatedReads rs,
+															   Transcripts ts)
+	{
+		ExpressionLevels el = new ExpressionLevels(ts);
+
+		Map<String, Double> totals = new HashMap<String, Double>();
+		for (Sequence t : ts.getSequences())
+		{
+			totals.put(t.getId(), 0.0);
+		}
+		
+		for (Sequence r : rs.getSequences())
+		{
+			SimulatedRead read = (SimulatedRead) r;
+			totals.put(read.getFromTranscriptData().getFirst(),
+					   totals.get( read.getFromTranscriptData().getFirst()) + 1.0);
+		}
+		
+		for (Entry<String, Double> e : totals.entrySet())
+		{
+			el.setExpressionLevel(e.getKey(), e.getValue() / rs.size());
+		}
+			
+		return el;
 	}
 }

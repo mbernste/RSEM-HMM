@@ -110,7 +110,7 @@ public class TestRSEM
 		
 		ExpectedHiddenData z = RSEM.eStep(rs, ts, cAligns, el, pM);
 		System.out.println(z);
-		Pair<ExpressionLevels, SubstitutionMatrix> params = RSEM.mStep(rs, ts, z);
+		Pair<ExpressionLevels, SubstitutionMatrix> params = RSEM.mStep(rs, ts, z, rs.size());
 		System.out.println(params.getFirst());
 		System.out.println(params.getSecond());
 	}

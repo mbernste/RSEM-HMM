@@ -2,7 +2,9 @@ package applications;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import common.Common;
 
@@ -48,7 +50,7 @@ public class RSEM
 		/*
 		 * Run RSEM
 		 */
-		ExpressionLevels result = RSEM.EM(rs, ts, aligns, el, pM);	
+		ExpressionLevels result = RSEM.EM(rs, ts, aligns, el, pM);
 		
 		/*
 		 * Print the resultant expression levels
@@ -62,6 +64,20 @@ public class RSEM
 						   			   ExpressionLevels pEl,
 						   			   SubstitutionMatrix pM)
 	{	
+		int numReadsAligned = 0;
+		Set<String> counted = new HashSet<String>();
+		for (Object[] o : cAligns.getAlignments())
+		{
+			String readId = (String) o[0];
+			
+			if (!counted.contains(readId))
+			{
+				counted.add(readId);
+				numReadsAligned++;
+			}
+		}
+		
+		
 		ExpectedHiddenData z = null;
 		
 		/*
@@ -75,12 +91,14 @@ public class RSEM
 			 * E-Step
 			 */
 			z = eStep(rs, ts, cAligns, pEl, pM);
-			//System.out.println(z);
 			
 			/*
 			 * M-Step
 			 */
-			Pair<ExpressionLevels, SubstitutionMatrix> params = mStep(rs, ts, z);
+			Pair<ExpressionLevels, SubstitutionMatrix> params = mStep(rs,
+																	  ts, 
+																	  z, 
+																	  numReadsAligned);
 			pEl = params.getFirst();
 			pM = params.getSecond();
 		
@@ -135,7 +153,8 @@ public class RSEM
 	
 	public static Pair<ExpressionLevels, SubstitutionMatrix> mStep(Reads rs, 
 																   Transcripts ts, 
-																   ExpectedHiddenData z)
+																   ExpectedHiddenData z,
+																   int numReadsAligned)
 	{
 		/*
 		 *	Calculate the new estimate of the expression levels parameters
@@ -145,7 +164,7 @@ public class RSEM
 		{
 			String tId = s.getId();
 			double sumOverT = z.sumOverTranscript(tId);
-			pEl.setExpressionLevel(tId, sumOverT / rs.size());
+			pEl.setExpressionLevel(tId, sumOverT / numReadsAligned);
 		}
 		
 		/*
