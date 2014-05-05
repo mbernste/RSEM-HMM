@@ -20,7 +20,7 @@ public class TestReadSet
 	{
 		Transcripts ts =  Core.getSmallTranscriptSet();
 		ExpressionLevels el = new ExpressionLevels(ts);
-		Reads rs = Simulation.simulateReads(ts, el, 5);
+		Reads rs = Simulation.simulateReads(ts, el, 5, false);
 		
 		for (Sequence r : rs.getSequences())
 		{
@@ -32,7 +32,7 @@ public class TestReadSet
 	{
 		Transcripts ts =  Core.getSmallTranscriptSet();
 		ExpressionLevels el = new ExpressionLevels(ts);
-		SimulatedReads rs = Simulation.simulateReads(ts, el, 5);
+		SimulatedReads rs = Simulation.simulateReads(ts, el, 5, false);
 		
 		System.out.println(rs.mapping());
 	}
@@ -41,7 +41,7 @@ public class TestReadSet
 	{
 		Transcripts ts =  Core.getSmallTranscriptSet();
 		ExpressionLevels el = new ExpressionLevels(ts);
-		Reads rs = Simulation.simulateReads(ts, el, 5);
+		Reads rs = Simulation.simulateReads(ts, el, 5, false);
 		
 		System.out.println(rs.fastaFormat());
 	}

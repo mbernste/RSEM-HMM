@@ -1,9 +1,6 @@
 package applications;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -26,24 +23,48 @@ import data.readers.FASTAReader;
 
 public class Simulation 
 {
+	public static int MAX_INSERTS_PER_HUNDRED;
+	public static int MAX_DELETES_PER_HUNDRED;
+	public static double GEOM_PARAM = 0.1828;
+	
 	public static void main(String[] args)
 	{	
-		Common.readLength = Integer.parseInt(args[0]);
-		int numReads = Integer.parseInt(args[1]);
-		
-		Transcripts ts = FASTAReader.readTranscripts(args[2]);
-		ExpressionLevels trueEl = generateExpressionLevels(ts);
-
-		SimulatedReads rs = simulateReads(ts, trueEl, numReads);
-
-		File fastaFile = new File(args[3]);
-		FileWriter.writeToFile(fastaFile, rs.fastaFormat());
-
-		File mapFile = new File(args[4]);
-		FileWriter.writeToFile(mapFile, rs.mapping());
-		
-		File elFile = new File(args[5]);
-		FileWriter.writeToFile(elFile, trueEl.toString());
+		try
+		{
+			boolean indels = Boolean.parseBoolean(args[0]);
+			MAX_INSERTS_PER_HUNDRED = Integer.parseInt(args[1]);
+			MAX_DELETES_PER_HUNDRED = Integer.parseInt(args[2]);
+			
+			Common.readLength = Integer.parseInt(args[3]);
+			int numReads = Integer.parseInt(args[4]);
+			
+			Transcripts ts = FASTAReader.readTranscripts(args[5]);
+			ExpressionLevels trueEl = generateExpressionLevels(ts);
+	
+			SimulatedReads rs = simulateReads(ts, trueEl, numReads, indels);
+	
+			File fastaFile = new File(args[6]);
+			FileWriter.writeToFile(fastaFile, rs.fastaFormat());
+	
+			File mapFile = new File(args[7]);
+			FileWriter.writeToFile(mapFile, rs.mapping());
+			
+			File elFile = new File(args[8]);
+			FileWriter.writeToFile(elFile, trueEl.toString());
+		}
+		catch(NumberFormatException e)
+		{
+			System.out.println("Usage:");
+			System.out.println("<indels = true/false>\n " +
+							   "<max inserts per 100 bases>\n " +
+							   "<max deletes per 100 bases>\n " +
+							   "<read length>\n " +
+							   "<num reads>\n " +
+							   "<Transcript FASTA file>\n " +
+							   "<Dest reads FASTA file name>\n " +
+							   "<map file name>\n " +
+							   "<expression level file name>\n");
+		}
 	}
 
 	public static ExpressionLevels generateExpressionLevels(Transcripts ts)
@@ -100,24 +121,53 @@ public class Simulation
 	 */
 	public static SimulatedReads simulateReads(Transcripts ts,
 											   ExpressionLevels trueEl,
-											   int numReads) 
+											   int numReads,
+											   boolean indels) 
 	{
 		SimulatedReads reads = new SimulatedReads();
 
-		for (int i = 0; i < numReads; i++)
+
+		Transcripts sourceTs = null;
+		
+		/*
+		 * If indel-mode, then we need to augment the transcript set to
+		 * make insertions, deletions, and point mutations.
+		 */
+		if (indels)
 		{
+			sourceTs = augmentTranscripts(ts);
+		}
+		else
+		{
+			sourceTs = ts;
+		}
+		
+		for (int i = 0; i < numReads; i++)
+		{	
 			/* 
 			 * Get random transcript 
 			 */
 			String tId = trueEl.sampleTranscript();
-			Transcript t = ts.getTranscript( tId );
+			Transcript t = sourceTs.getTranscript( tId );
+			String tSeq = t.getSeq();
+			
+			System.out.println("TRANSCRIPT!!! \n" + t);
+			System.out.println(tSeq == null); //TODO
+			
+			/*
+			 * Randomly use the reverse compliment
+			 */
+			if (Common.RNG.nextBoolean())
+			{
+				tSeq = Common.reverseCompliment(tSeq);
+			}
 
 			/*
 			 *  Generate random starting position from uniform distribution 
 			 */
 			int startPos = Common.RNG.nextInt(t.length());
 			String readSeq;
-
+			
 			/*
 			 *  Generate the read sequence 
 			 */
@@ -129,12 +179,82 @@ public class Simulation
 			{
 				readSeq = t.getSeq().substring(startPos, startPos + Common.readLength);
 			}
-
-			reads.addRead(new SimulatedRead(new Pair<String, Integer>(t.getId(), startPos),
-					readSeq));
+				
+			
+			reads.addRead(new SimulatedRead(new Pair<String, Integer>(t.getId(), startPos), 
+								readSeq));
 		}
 
 		return reads;
 	}
+	
+	public static Transcripts augmentTranscripts(Transcripts ts)
+	{
+		Transcripts augTs = new Transcripts();
+		
+		for (Sequence t : ts.getSequences())
+		{
+			int numInserts = Common.RNG.nextInt(((t.length() / 100) + 1) * MAX_INSERTS_PER_HUNDRED);
+			int numDeletes = Common.RNG.nextInt(((t.length() / 100) + 1) * MAX_DELETES_PER_HUNDRED);
+			
+			String seq = t.getSeq();
+			for (int i = 0; i < numDeletes; i++)
+			{
+				seq = makeDeletion(seq);
+			}
+			
+			for (int i = 0; i < numInserts; i++)
+			{
+				seq = makeInsertion(seq);
+			}
 
+			Transcript newT = new Transcript(t.getId());
+			newT.setSeq(seq);
+			augTs.addSequence(newT);
+		}
+		
+		return augTs;
+	}
+	
+	public static String makeDeletion(String seq)
+	{
+		int rLength = sampleGeometricDistribution(GEOM_PARAM);
+		
+		if (rLength < seq.length())
+		{
+			int index = Common.RNG.nextInt(seq.length() - rLength);		
+			return seq.substring(0, index) + seq.substring(index+rLength, seq.length());
+		}
+		else
+		{
+			return seq;
+		}
+	}
+	
+	
+	public static String makeInsertion(String seq)
+	{
+		int rLength = sampleGeometricDistribution(GEOM_PARAM);
+		int index = Common.RNG.nextInt(seq.length());
+		
+		String insert = "";
+		for (int i = 0; i < rLength; i++)
+		{
+			insert += Common.DNA_ALPHABET[Common.RNG.nextInt(4)];
+		}
+		
+		return seq.substring(0, index) + insert + seq.substring(index, seq.length());
+	}
+	
+	public static int sampleGeometricDistribution(double param)
+	{
+		int result = 1;
+		while (true)
+		{
+			if (Common.RNG.nextDouble() < param)
+				return result;
+			else
+				result++;
+		}
+	}
 }

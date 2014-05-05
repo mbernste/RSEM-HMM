@@ -35,7 +35,7 @@ public class TestMappingReader
 		
 		Transcripts ts = Core.getSmallTranscriptSet();
 		ExpressionLevels el = new ExpressionLevels(ts);
-		SimulatedReads rs = Simulation.simulateReads(ts, el, 20);
+		SimulatedReads rs = Simulation.simulateReads(ts, el, 20, false);
 		
 		File fastaFile = new File(readsFName);
 		FileWriter.writeToFile(fastaFile, rs.fastaFormat());

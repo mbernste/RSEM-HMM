@@ -65,6 +65,10 @@ public class ForwardAlgorithm
 					 *  The emission probability of the current symbol at the 
 					 *  ith time step.
 					 */
+					// TODO
+					/*
+					System.out.println("EMISSION P of " + Character.toString(sequence.charAt(t-1)) + " For State " + currState.getId() + ":" + model.getEmissionProb(currState.getId(), 
+							  			Character.toString(sequence.charAt(t-1))));*/
 					double eProb = model.getEmissionProb(currState.getId(), 
 							  			Character.toString(sequence.charAt(t-1)));
 					
@@ -77,9 +81,21 @@ public class ForwardAlgorithm
 						double fValue = dpMatrix.getValue(lastState, t-1);
 						
 						double tProb  = model.getTransitionProb(lastState.getId(), 
-															    currState.getId());						
+															    currState.getId());	
+						
+						if (t == 1)
+						{
+							//System.out.println("fValue = " + fValue);
+							//System.out.println("tProb = " + tProb);
+						}
 						sum += (fValue * tProb);
 					}	
+					
+					//if (t == 1) 
+					//{
+					//	System.out.println("State " + currState.getId() + " TIME " + t + " E-Prob: " + eProb + " * SUM: " + sum);
+					//}
+					
 					double newFValue = sum * eProb;
 											
 					/*
@@ -105,7 +121,10 @@ public class ForwardAlgorithm
 					double tProb  = model.getTransitionProb(lastState.getId(), 
 														    currState.getId());
 					sum += (fValue * tProb);
-				}	
+				}
+				
+				//if (t == 1) System.out.println("State " + currState.getId() + " TIME " + " SUM: " + sum);
+				
 				double newFValue = sum;
 					
 				/*

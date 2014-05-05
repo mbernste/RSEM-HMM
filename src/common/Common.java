@@ -17,6 +17,7 @@ public class Common
 	
 	public static String reverseCompliment(String seq)
 	{
+		System.out.println(seq == null);
 		char[] rcChars = new char[seq.length()];
 		
 		int length = seq.length();

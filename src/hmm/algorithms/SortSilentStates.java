@@ -7,14 +7,12 @@ import hmm.Transition;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 import bimap.BiMap;
 
 public class SortSilentStates 
 {
-	public static ArrayList<State> sortSilentStates(HMM model)
+	public static ArrayList<State> run(HMM model)
 	{
 		Collection<State> silentStates = model.getSilentStates(); 
 		
@@ -55,24 +53,6 @@ public class SortSilentStates
 				
 			}
 		}
-		
-		
-		/*
-		System.out.print("\t");
-		for (State s : silentStates)
-		{
-			System.out.print(s.getId() + "\t");
-		}
-		System.out.println();
-        for (int r = 0; r < numNodes; r++)
-        {
-        	System.out.print(indices.getValue(r) + "\t");
-            for (int c = 0; c < numNodes; c++)
-            {
-                System.out.print(graph[r][c] + "\t");
-            }
-            System.out.print("\n");
-        }*/
         
         ArrayList<Integer> sortedIndices = TopologicalSort.run(graph);
         

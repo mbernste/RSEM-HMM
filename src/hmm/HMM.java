@@ -81,7 +81,7 @@ public class HMM
 	
 	public ArrayList<State> getSortedSilentStates()
 	{
-		return SortSilentStates.sortSilentStates(this);
+		return SortSilentStates.run(this);
 	}
 	
 	public State getStateById(String id)

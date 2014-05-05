@@ -40,7 +40,7 @@ public class StateSilent extends State
 	public double getEmissionProb(String symbol)
 	{
 		// TODO CHECK IF THIS IS CORRECT
-		return 1.0;
+		return 0.0;
 	}
 	
 	@Override

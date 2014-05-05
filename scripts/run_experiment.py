@@ -26,6 +26,7 @@ parser = OptionParser()
 parser.add_option("-s", "--sample", type="int", help="Number of transcripts to sample from which to simulate the reads.")
 parser.add_option("-b", "--build", action="store_true", help="Create new bowties alignment indices.")
 parser.add_option("-m", "--simulate", type="int", help="Number of reads to simulate from the reference transcripts.")
+parser.add_option("-i", "--indels", action="store_true", help="Simulate reads with indels.")
 parser.add_option("-l", "--r_length", type="int", help="The length of the reads to be simulated.")
 parser.add_option("-a", "--align", action="store_true", help="Create intitial bowtie alignments against the indices.")
 parser.add_option("-p", "--preset", type="int", help="Choose preset bowtie alignment settings (1, 2, 3).")
@@ -36,6 +37,7 @@ print options
 tFile = MOUSE_TRANS
 rLength = 25
 preset = 1
+
 
 # Option to sample reference transcripts in order to simulate reads from smaller data
 if options.__dict__['sample']:
