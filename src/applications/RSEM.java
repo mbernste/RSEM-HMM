@@ -52,6 +52,13 @@ public class RSEM
 		 */
 		ExpressionLevels result = RSEM.EM(rs, ts, aligns, el, pM);
 		
+		double sum = 0.0;
+		for (Sequence t : ts.getSequences())
+		{
+			sum += result.getExpressionLevel(t.getId());
+		}
+		System.out.println("SUM: " + sum);
+		
 		/*
 		 * Print the resultant expression levels
 		 */
@@ -91,7 +98,7 @@ public class RSEM
 			 * E-Step
 			 */
 			z = eStep(rs, ts, cAligns, pEl, pM);
-			
+						
 			/*
 			 * M-Step
 			 */
@@ -119,7 +126,7 @@ public class RSEM
 							 SubstitutionMatrix pM)
 	{ 
 		ExpectedHiddenData z = new ExpectedHiddenData(rs, ts);
-		
+				
 		for (Object[] o : cAligns.getAlignments())
 		{
 			String readId = (String) o[0];
@@ -202,13 +209,14 @@ public class RSEM
 		String rSeq = r.getSeq();
 		String tSeq = t.getSeq();
 		
+		
 		if (orientation == Common.REVERSE_COMPLIMENT_ORIENTATION)
-		{
+		{	
 			tSeq = Common.reverseCompliment(tSeq);
-			int rcStartPos = tSeq.length() - (startPos + rSeq.length());
+			int rcStartPos = tSeq.length() - (startPos + rSeq.length()); 		
 			
 			for (int i = 0; i < rSeq.length(); i++)
-			{
+			{	
 				char rSymbol = rSeq.charAt(i);
 				char tSymbol = tSeq.charAt(rcStartPos + i);
 				

@@ -445,7 +445,7 @@ public class ExpectedHiddenData
 			for (Entry<Integer, K> e : positionToOrientation.entrySet())
 			{
 				int tPos = e.getKey();
-				if (ts.getSequence(tId).getSeq().charAt(rPos + tPos - 1) == tSymbol)
+				if (ts.getSequence(tId).getSeq().charAt(rPos + tPos) == tSymbol)
 				{					
 					double s = e.getValue().sumAllValues();	
 					sum += s;

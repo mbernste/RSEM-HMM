@@ -4,6 +4,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import LogTransforms.LogTransforms;
+
+import common.Common;
+
 public class StateParamsTied extends State
 {
 	public static Map<String,Map<String, Double>> tiedEmissionParams
@@ -12,16 +16,31 @@ public class StateParamsTied extends State
 	/**
 	 * The ID of the parameters that this State uses
 	 */
-	private String paramsId;
+	private String paramsKey;
 	
 	/**
 	 * Constructor.
 	 * 
 	 * @param paramsId the ID of the parameters that this State uses
 	 */
-	public StateParamsTied(String paramsId)
+	public StateParamsTied(String paramsKey, String id)
 	{
-		this.paramsId = paramsId;
+		super(id);
+		this.paramsKey = paramsKey;
+		this.initializeParams();		
+	}
+	
+	public StateParamsTied(State orig, String paramsKey)
+	{
+		super(orig);
+		this.paramsKey = paramsKey;
+		this.initializeParams();
+	}
+	
+	public StateParamsTied(StateParamsTied orig)
+	{
+		super(orig);
+		this.paramsKey = orig.paramsKey;
 	}
 	
 	/**
@@ -29,8 +48,8 @@ public class StateParamsTied extends State
 	 */
 	@Override
 	public Map<String, Double> getEmissionProbabilites()
-	{
-		return tiedEmissionParams.get(this.paramsId);
+	{		
+		return tiedEmissionParams.get(this.paramsKey);
 	}
 	
 	/**
@@ -42,7 +61,7 @@ public class StateParamsTied extends State
 	@Override
 	public void addEmission(String symbol, Double probability)
 	{
-		tiedEmissionParams.get(this.paramsId).put(symbol, probability);
+		tiedEmissionParams.get(this.paramsKey).put(symbol, probability);
 	}
 	
 	/**
@@ -53,13 +72,33 @@ public class StateParamsTied extends State
 	 */
 	public double getEmissionProb(String symbol)
 	{
-		if (tiedEmissionParams.get(this.paramsId).containsKey(symbol))
+		if (tiedEmissionParams.get(this.paramsKey).containsKey(symbol))
 		{
-			return tiedEmissionParams.get(this.paramsId).get(symbol);
+			return tiedEmissionParams.get(this.paramsKey).get(symbol);
 		}
 		else
 		{
-			return 0.0;
+			return LogTransforms.eLn(0.0);
+		}
+	}
+	
+	public String getParamsKey()
+	{
+		return this.paramsKey;
+	}
+	
+	private void initializeParams()
+	{
+		if (!StateParamsTied.tiedEmissionParams.containsKey(this.paramsKey))
+		{
+			StateParamsTied.tiedEmissionParams.put(this.paramsKey, 
+												   new HashMap<String, Double>());
+			
+			// TODO GENERALIZE THIS!!
+			for (int i = 0; i < Common.DNA_ALPHABET.length; i++)
+			{
+				StateParamsTied.tiedEmissionParams.get(paramsKey).put(Character.toString(Common.DNA_ALPHABET[i]), 0.0);
+			}
 		}
 	}
 	
@@ -86,7 +125,7 @@ public class StateParamsTied extends State
 		result += "............\n";
 		
 		for (Entry<String, Double> entry : 
-			 StateParamsTied.tiedEmissionParams.get(this.paramsId).entrySet())
+			 StateParamsTied.tiedEmissionParams.get(this.paramsKey).entrySet())
 		{
 			result += (entry.getKey() + " >> " + entry.getValue() + "\n");
 		}		

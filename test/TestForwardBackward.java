@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 
+import LogTransforms.LogTransforms;
+
 import pair.Pair;
 
 import hmm.HMM;
@@ -7,6 +9,8 @@ import hmm.State;
 import hmm.StateSilent;
 import hmm.Transition;
 import hmm.algorithms.BackwardAlgorithm;
+import hmm.algorithms.BackwardAlgorithmNoLogSpace;
+import hmm.algorithms.ForwardAlgorithmNoLogSpace;
 import hmm.algorithms.DpMatrix;
 import hmm.algorithms.ForwardAlgorithm;
 import hmm.algorithms.SortSilentStates;
@@ -31,24 +35,23 @@ public class TestForwardBackward
 		State E = new State("E");
 		State F = new State("F");
 		State G = new StateSilent("G");
-
 		
-		A.addTransition(new Transition("A", "E", 0.5));
-		A.addTransition(new Transition("A", "X", 0.5));
-		A.addTransition(new Transition("A", "B", 0.5));
-		B.addTransition(new Transition("B", "C", 0.5));
-		B.addTransition(new Transition("B", "F", 0.5));
-		C.addTransition(new Transition("C", "D", 0.5));
-		D.addTransition(new Transition("D", "E", 0.5));
-		E.addTransition(new Transition("E", "E", 1.0));
-		F.addTransition(new Transition("F", "E", 1.0));
-		E.addTransition(new Transition("E", "G", 0.5));
+		A.addTransition(new Transition("A", "E", LogTransforms.eLn(0.5)));
+		A.addTransition(new Transition("A", "X", LogTransforms.eLn(0.5)));
+		A.addTransition(new Transition("A", "B", LogTransforms.eLn(0.5)));
+		B.addTransition(new Transition("B", "C", LogTransforms.eLn(0.5)));
+		B.addTransition(new Transition("B", "F", LogTransforms.eLn(0.5)));
+		C.addTransition(new Transition("C", "D", LogTransforms.eLn(0.5)));
+		D.addTransition(new Transition("D", "E", LogTransforms.eLn(0.5)));
+		E.addTransition(new Transition("E", "E", LogTransforms.eLn(1.0)));
+		F.addTransition(new Transition("F", "E", LogTransforms.eLn(1.0)));
+		E.addTransition(new Transition("E", "G", LogTransforms.eLn(0.5)));
 		
-		E.addEmission("x", 0.5);
-		E.addEmission("y", 0.5);
+		E.addEmission("x", LogTransforms.eLn(0.5));
+		E.addEmission("y", LogTransforms.eLn(0.5));
 		
-		F.addEmission("x", 0.9);
-		F.addEmission("y", 0.1);
+		F.addEmission("x", LogTransforms.eLn(0.9));
+		F.addEmission("y", LogTransforms.eLn(0.1));
 		
 		hmm.addState(B);
 		hmm.addState(D);
@@ -67,14 +70,20 @@ public class TestForwardBackward
 	{
 		HMM toyHmm = buildToyHMM();
 		Pair<Double, DpMatrix> result = ForwardAlgorithm.run(toyHmm, "yyxx");
+		//Pair<Double, DpMatrix> result = CopyOfForwardAlgorithm.run(toyHmm, "yyxx");
 		System.out.println(result.getFirst());
+		System.out.println(Math.pow(Math.E, result.getFirst()));
 	}
 	
 	public static void testBackward()
 	{
 		HMM toyHmm = buildToyHMM();
 		Pair<Double, DpMatrix> result = BackwardAlgorithm.run(toyHmm, "yyxx");
+		//Pair<Double, DpMatrix> result = CopyOfBackwardAlgorithm.run(toyHmm, "yyxx");
+		
 		System.out.println(result.getFirst());
+		System.out.println(Math.pow(Math.E, result.getFirst()));
+		
 	}
 	
 }

@@ -44,5 +44,6 @@ public class TestHmmConstructBuilder
 		//Pair<Double, DpMatrix> result = ForwardAlgorithm.run(hmm, seq);
 		
 		System.out.println("FULL PROBABILITY: " + result.getFirst());
+		System.out.println(Math.pow(Math.E, result.getFirst()));
 	}
 }

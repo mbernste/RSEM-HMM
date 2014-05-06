@@ -3,6 +3,8 @@ package hmm;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import LogTransforms.LogTransforms;
+
 public class StateSilent extends State
 {
 	/**
@@ -40,7 +42,7 @@ public class StateSilent extends State
 	public double getEmissionProb(String symbol)
 	{
 		// TODO CHECK IF THIS IS CORRECT
-		return 0.0;
+		return LogTransforms.eLn(0.0);
 	}
 	
 	@Override

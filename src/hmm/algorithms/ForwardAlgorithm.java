@@ -3,8 +3,7 @@ package hmm.algorithms;
 import hmm.HMM;
 import hmm.State;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import LogTransforms.LogTransforms;
 
 import pair.Pair;
 
@@ -17,7 +16,7 @@ import pair.Pair;
  */
 public class ForwardAlgorithm 
 {	
-	public static int debug = 0;
+	public static int debug = 2;
 	
 	/**
 	 * Given a HMM model and sequence generated from the HMM, the forward 
@@ -65,17 +64,13 @@ public class ForwardAlgorithm
 					 *  The emission probability of the current symbol at the 
 					 *  ith time step.
 					 */
-					// TODO
-					/*
-					System.out.println("EMISSION P of " + Character.toString(sequence.charAt(t-1)) + " For State " + currState.getId() + ":" + model.getEmissionProb(currState.getId(), 
-							  			Character.toString(sequence.charAt(t-1))));*/
 					double eProb = model.getEmissionProb(currState.getId(), 
 							  			Character.toString(sequence.charAt(t-1)));
 					
 					/*
 					 * Sum over previous time-step
 					 */
-					double sum = 0;
+					double sum = Double.NaN;
 					for (State lastState : model.getStates())
 					{
 						double fValue = dpMatrix.getValue(lastState, t-1);
@@ -83,20 +78,10 @@ public class ForwardAlgorithm
 						double tProb  = model.getTransitionProb(lastState.getId(), 
 															    currState.getId());	
 						
-						if (t == 1)
-						{
-							//System.out.println("fValue = " + fValue);
-							//System.out.println("tProb = " + tProb);
-						}
-						sum += (fValue * tProb);
+						sum = LogTransforms.eLnSum(sum, LogTransforms.eLnProduct(fValue, tProb));
 					}	
 					
-					//if (t == 1) 
-					//{
-					//	System.out.println("State " + currState.getId() + " TIME " + t + " E-Prob: " + eProb + " * SUM: " + sum);
-					//}
-					
-					double newFValue = sum * eProb;
+					double newFValue = LogTransforms.eLnProduct(sum, eProb);
 											
 					/*
 					 *  Set the new value in the DP matrix
@@ -113,14 +98,14 @@ public class ForwardAlgorithm
 				/*
 				 * Sum over previous time-step
 				 */
-				double sum = 0;
+				double sum = Double.NaN;
 				for (State lastState : model.getStates())
 				{
 					double fValue = dpMatrix.getValue(lastState, t);
 					
 					double tProb  = model.getTransitionProb(lastState.getId(), 
 														    currState.getId());
-					sum += (fValue * tProb);
+					sum = LogTransforms.eLnSum(sum, LogTransforms.eLnProduct(fValue, tProb));
 				}
 				
 				//if (t == 1) System.out.println("State " + currState.getId() + " TIME " + " SUM: " + sum);
@@ -145,13 +130,13 @@ public class ForwardAlgorithm
 		 * joint probability of observing the sequence (i.e. of being in the 
 		 * last time step) in each state.
 		 */
-		double sum = 0;
+		double sum = Double.NaN;
 		for (State state : model.getStates())
 		{	
 			if (!state.isSilent())
 			{
 				double fValue = dpMatrix.getValue(state, dpMatrix.getNumColumns() - 1);
-				sum += fValue;
+				sum = LogTransforms.eLnSum(sum, fValue);
 			}
 		}
 		
@@ -172,15 +157,15 @@ public class ForwardAlgorithm
 		 */
 		for (State state : model.getStateContainer().getStates())
 		{
-			dpMatrix.setValue(state, 0, 0.0);
+			dpMatrix.setValue(state, 0, Double.NaN);
 		}
 		
 		/*
-		 *  Set coordnate (0,0) to 1.0 corresponding to 100% probability
+		 *  Set coordinate (0,0) to 1.0 corresponding to 100% probability
 		 *  that we are in the begin state at time step 0
 		 */
  		State beginState = model.getBeginState();
-		dpMatrix.setValue(beginState, 0, 1.0);
+		dpMatrix.setValue(beginState, 0, LogTransforms.eLn(1.0));
 		
 		/*
 		 *  Set initial probabilities for silent states
@@ -192,14 +177,15 @@ public class ForwardAlgorithm
 				/*
 				 * Sum over first time-step
 				 */
-				double sum = 0;
+				double sum = Double.NaN;
 				for (State lastState : model.getStates())
 				{
 					double fValue = dpMatrix.getValue(lastState, 0);
-					
+
 					double tProb  = model.getTransitionProb(lastState.getId(), 
 														    currState.getId());
-					sum += (fValue * tProb);
+										
+					sum = LogTransforms.eLnSum(sum, LogTransforms.eLnProduct(fValue, tProb));
 				}	
 				double newFValue = sum;
 					

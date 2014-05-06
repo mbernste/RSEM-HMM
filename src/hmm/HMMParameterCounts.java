@@ -1,16 +1,39 @@
 package hmm;
 
+import java.util.HashMap;
 import java.util.Map;
+
+import LogTransforms.LogTransforms;
+
+import common.Common;
 
 public class HMMParameterCounts extends HMM 
 {
+	public Map<String, String> paramsKeys;
+
+	public final static String PARAMS_KEY_SUFFIX = "_COPY";
+	
 	public HMMParameterCounts(HMM hmm)
 	{
 		super();
 		
+		paramsKeys = new HashMap<String, String>();
+		String paramsKeyCopy = null;
+		
 		for (State s : hmm.getStates())
 		{
-			this.states.addState(new State(s));
+			if (s instanceof StateParamsTied)
+			{
+				String paramsKey = ((StateParamsTied) s).getParamsKey();
+				paramsKeyCopy = paramsKey + PARAMS_KEY_SUFFIX;
+				paramsKeys.put(paramsKey, paramsKeyCopy);
+				
+				this.states.addState(new StateParamsTied(s, paramsKeyCopy));
+			}
+			else
+			{
+				this.states.addState(new State(s));
+			}
 		}
 	}
 	
@@ -20,12 +43,11 @@ public class HMMParameterCounts extends HMM
 		{
 			for (Transition t : s.getTransitions())
 			{
-				t.setTransitionProbability(0.0);
+				t.setTransitionProbability(LogTransforms.eLn(0.0));
 			}
-			
 			for (String str : s.getEmissionProbabilites().keySet())
 			{
-				s.addEmission(str, 0.0);
+				s.addEmission(str, LogTransforms.eLn(0.0));
 			}
 		}
 	}
@@ -33,7 +55,7 @@ public class HMMParameterCounts extends HMM
 	public void incrementTransitionCount(String originId, 
 										 String destId, 
 										 double value)
-	{		
+	{	
 		this.states.getStateById(originId)
 				   .getTransition(destId)
 				   .incrementTransitionValue(value);
@@ -47,6 +69,11 @@ public class HMMParameterCounts extends HMM
 		this.states.getStateById(stateId)
 				   .getEmissionProbabilites()
 				   .put(symbol, value + currVal);
+	}
+	
+	public Map<String, Double> getTiedEmissionPrams(String paramsKey)
+	{
+		return StateParamsTied.tiedEmissionParams.get(paramsKeys.get(paramsKey));
 	}
 
 }

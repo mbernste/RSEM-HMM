@@ -6,6 +6,8 @@ import hmm.State;
 import java.util.Collection;
 import java.util.ArrayList;
 
+import LogTransforms.LogTransforms;
+
 import pair.Pair;
 
 
@@ -45,12 +47,12 @@ public class BackwardAlgorithm
 			{
 				State currState = sortedSilent.get(j);
 				
-				double sum = 0;
+				double sum = Double.NaN;
 				for (State forwardState : model.getStates())
 				{
 					double bValue;
 					double tProb;
-					double eProb = 1.0;
+					double eProb = LogTransforms.eLn(1.0);
 					
 					if (forwardState.isSilent()) // Transitions to silent states
 					{
@@ -71,7 +73,7 @@ public class BackwardAlgorithm
 															 forwardState.getId() 
 															  );
 					}
-					sum += (tProb * eProb * bValue);
+					sum = LogTransforms.eLnSum(sum, LogTransforms.eLnProduct( LogTransforms.eLnProduct(tProb, eProb), bValue));
 				}
 				
 				// Set the new value in the DP matrix
@@ -85,12 +87,12 @@ public class BackwardAlgorithm
 			{
 				if (!currState.isSilent())
 				{
-					double sum = 0;
+					double sum = Double.NaN;
 					for (State forwardState : model.getStates())
 					{
 						double bValue;
 						double tProb;
-						double eProb = 1.0;
+						double eProb = LogTransforms.eLn(1.0);
 						
 						if (forwardState.isSilent()) // Transitions to silent states
 						{
@@ -102,6 +104,7 @@ public class BackwardAlgorithm
 						}
 						else  // Transitions to non-silent states
 						{
+							
 							eProb = model.getEmissionProb(forwardState.getId(),
 							  		Character.toString(sequence.charAt(t)));
 							
@@ -112,7 +115,7 @@ public class BackwardAlgorithm
 																  );
 						}
 									
-						sum += (tProb * eProb * bValue);
+						sum = LogTransforms.eLnSum(sum, LogTransforms.eLnProduct( LogTransforms.eLnProduct(tProb, eProb), bValue));
 					}
 					
 					// Set the new value in the DP matrix
@@ -136,10 +139,12 @@ public class BackwardAlgorithm
 	public static void initialize(DpMatrix dpMatrix, HMM model)
 	{
 		
-		// Set all elements to 0.0
+		/*
+		 *  Set all elements to 0.0
+		 */
 		for (State state : model.getStateContainer().getStates())
 		{
-			dpMatrix.setValue(state, 0, 0.0);
+			dpMatrix.setValue(state, 0, Double.NaN);
 		}
 		
 		
@@ -149,7 +154,7 @@ public class BackwardAlgorithm
 		 */
 		for (State state : model.getStates())
 		{
-			dpMatrix.setValue(state, dpMatrix.getNumColumns() - 1, 1.0);
+			dpMatrix.setValue(state, dpMatrix.getNumColumns() - 1, LogTransforms.eLn(1.0));
 		}
 		
 		/*

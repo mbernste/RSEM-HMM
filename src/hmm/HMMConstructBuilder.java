@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import LogTransforms.LogTransforms;
+
 import common.Common;
 import data.readers.Alignments;
 
@@ -28,7 +30,7 @@ public class HMMConstructBuilder
 	/*
 	 * The ID for the tied insertion-state emission parameters
 	 */
-	private String INSERTION_PARAMS_ID = "Inert_Params";
+	public static final String INSERTION_PARAMS_ID = "Inert_Params";
 	
 	/*
 	 * The HMM under construction
@@ -52,21 +54,7 @@ public class HMMConstructBuilder
 	{	
 		mainHmm = new HMM();
 		muxStates = new ArrayList<State>();
-		subHMMs = new HashMap<String, HMM>();
-		
-		StateParamsTied.tiedEmissionParams.put(INSERTION_PARAMS_ID, 
-											   new HashMap<String, Double>());
-		
-		/*
-		 * Set initial emission probabilities for all insertion states 
-		 * to the uniform distribution.  These parameters are all tied.
-		 */
-		for (char symbol : Common.DNA_ALPHABET)
-		{
-			StateParamsTied.tiedEmissionParams
-						   .get(INSERTION_PARAMS_ID)
-						   .put(Character.toString(symbol), 0.25);
-		}		
+		subHMMs = new HashMap<String, HMM>();		
 		
 		/*
 		 * The start state that attaches to all profile-HMM "mux" states
@@ -103,6 +91,17 @@ public class HMMConstructBuilder
 		}
 		
 		/*
+		 * Set initial emission probabilities for all insertion states 
+		 * to the uniform distribution.  These parameters are all tied.
+		 */
+		for (char symbol : Common.DNA_ALPHABET)
+		{
+			StateParamsTied.tiedEmissionParams
+						   .get(INSERTION_PARAMS_ID)
+						   .put(Character.toString(symbol), LogTransforms.eLn(0.25));
+		}
+		
+		/*
 		 * Normalize the transition probabilities for all mux states.
 		 * Add transitions from the start state to all of the mux states,
 		 * then normalize these probabilities.
@@ -112,7 +111,7 @@ public class HMMConstructBuilder
 			m.normalizeTransitionProbabilities();
 			startState.addTransition(new Transition(startState.getId(),
 													m.getId(),
-													1.0));
+													LogTransforms.eLn(1.0)));
 		}
 		startState.normalizeTransitionProbabilities();
 		
@@ -161,7 +160,7 @@ public class HMMConstructBuilder
 			
 			muxState.addTransition(new Transition(muxState.getId(),
 												  matchStateId(t, i, orient),
-												  1.0));
+												  LogTransforms.eLn(1.0)));
 		}
 
 		return muxState;
@@ -231,12 +230,12 @@ public class HMMConstructBuilder
 			if (symbol == matchedSymbol)
 			{
 				mState.addEmission(Character.toString(symbol), 
-								   	   1 - (3 * NON_MATCH_P));
+								   	   LogTransforms.eLn(1 - (3 * NON_MATCH_P)));
 			}
 			else
 			{
 				mState.addEmission(Character.toString(symbol), 
-									   NON_MATCH_P);
+									LogTransforms.eLn(NON_MATCH_P));
 			}
 		}
 		
@@ -245,8 +244,7 @@ public class HMMConstructBuilder
 
 	public State createInsertState(String sId, int startPos, boolean orient)
 	{
-		State iState = new StateParamsTied(INSERTION_PARAMS_ID);
-		iState.setId( sId );
+		State iState = new StateParamsTied(INSERTION_PARAMS_ID, sId);
 		return iState;
 	}
 	
@@ -284,7 +282,8 @@ public class HMMConstructBuilder
 			State mState = mainHmm.getStateById(matchStateId(t, i, orient));
 			State mNextState = mainHmm.getStateById(matchStateId(t, i+1, orient));
 				
-			double p = 1.0 /3.0;
+			double p = LogTransforms.eLn(1.0 /3.0);
+			//double p = 1.0 /3.0;
 			dState.addTransition(new Transition(dState.getId(), 
 												dNextState.getId(),
 												p));
@@ -318,7 +317,8 @@ public class HMMConstructBuilder
 			State iState = mainHmm.getStateById(insertStateId(t, i, orient));
 			State mState = mainHmm.getStateById(matchStateId(t, i, orient));
 			
-			double p = 1.0 /3.0;
+			double p = LogTransforms.eLn(1.0 /3.0);
+			//double p = 1.0 /3.0;
 			dState.addTransition(new Transition(dState.getId(), 
 												iState.getId(),
 												p));

@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import LogTransforms.LogTransforms;
+
 
 /**
  * This class implements a single state in the HMM.  Each State object
@@ -65,7 +67,7 @@ public class State
 
 		for (String str : s.emissionProbs.keySet())
 		{
-			this.emissionProbs.put(str, 0.0);
+			this.emissionProbs.put(str, LogTransforms.eLn(0.0));
 		}
 	}
 	
@@ -126,7 +128,7 @@ public class State
 		}
 		else
 		{
-			return 0.0;
+			return LogTransforms.eLn(0.0);
 		}
 	}
 	
@@ -134,25 +136,23 @@ public class State
 	{
 		if (transitions.containsKey(destId))
 		{
-			// TODO REMOVE
-			//System.out.println("WHY YOU NAN?? " + transitions.get(destId).getTransitionProbability());
 			return transitions.get(destId).getTransitionProbability();
 		}
 		
-		return 0.0;
+		return LogTransforms.eLn(0.0);
 	}
 	
 	public void normalizeTransitionProbabilities()
 	{
-		double sum = 0.0;
+		double sum = Double.NaN;
 		for (Transition t : transitions.values())
 		{
-			sum += t.getTransitionProbability();
+			sum = LogTransforms.eLnSum(sum, t.getTransitionProbability());
 		}
 		
 		for (Transition t : transitions.values())
 		{
-			t.setTransitionProbability(t.getTransitionProbability() / sum);
+			t.setTransitionProbability(LogTransforms.eLnDivision(t.getTransitionProbability(), sum));
 		}
 	}
 	
@@ -209,7 +209,7 @@ public class State
 		for (Entry<String, Transition> e : transitions.entrySet())
 		{
 			String destStateId = e.getKey();			
-			result += (e.getValue().getTransitionProbability() + 
+			result += (Math.pow(Math.E, e.getValue().getTransitionProbability()) + 
 					" --> ");
 			result += ("[" + destStateId + "]");
 			result += "\n";
@@ -220,7 +220,7 @@ public class State
 		for (Entry<String, Double> entry : 
 			 getEmissionProbabilites().entrySet())
 		{
-			result += (entry.getKey() + " >> " + entry.getValue() + "\n");
+			result += (entry.getKey() + " >> " + Math.pow(Math.E, entry.getValue()) + "\n");
 		}		
 
 		result += "............\n";

@@ -5,6 +5,7 @@ import hmm.HMMConstruct;
 import hmm.HMMConstructBuilder;
 import hmm.HMMParameterCounts;
 import hmm.State;
+import hmm.StateParamsTied;
 import hmm.Transition;
 import hmm.algorithms.BackwardAlgorithm;
 import hmm.algorithms.DpMatrix;
@@ -13,6 +14,8 @@ import hmm.algorithms.ForwardAlgorithm;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import LogTransforms.LogTransforms;
 
 import pair.Pair;
 import rsem.model.ExpressionLevels;
@@ -34,7 +37,7 @@ public class RSEM_HMM
 	
 	public static void main(String[] args)
 	{
-		Core.TestKit kit = Core.getDummyTestKitTwo();
+		Core.TestKit kit = Core.getDummyTestKit();
 		
 		Transcripts ts = kit.transcripts();
 		Reads rs = kit.reads();
@@ -63,6 +66,8 @@ public class RSEM_HMM
 		while (Math.abs(probData - prevProbData) > EPSILON)
 		//for (int i = 0; i < 2; i++)
 		{		
+			System.out.println("*************************** NEW ITERATION **********************************");		
+			
 			prevProbData = probData;
 			probData = probabilityOfData(rs, ts, hConstruct);	
 						
@@ -71,21 +76,18 @@ public class RSEM_HMM
 			 */
 			z = eStep(rs, z, hConstruct);
 			
+			System.out.println("---------------------------- M-STEP ------------------------------------");
+			
 			/*
 			 * M-Step
 			 */
 			hConstruct = mStep(z, hConstruct);
 			
-			// TODO REMOVE
-			//System.out.println(hConstruct.getReadHMM("1"));
 						
 			if (debug > 0)
 				System.out.println("Current probability of data: " + probData);
 		}
 
-		//System.out.println(z);
-		//System.out.println(hConstruct.getMainHMM());
-		
 		ExpressionLevels el = new ExpressionLevels(ts);
 		return el;
 	}
@@ -109,26 +111,33 @@ public class RSEM_HMM
 			if (rHMM != null)
 			{
 				// TODO
-				System.out.println(rHMM);
-				
+				//if (r.getId().equals("2"))
+				//{
+				//	System.out.println(rHMM);
+				//}
+					
 				String x = r.getSeq();
-				ForwardAlgorithm.debug = 0; //TODO
-				Pair<Double, DpMatrix> fResult = ForwardAlgorithm.run(rHMM, 
-																	  r.getSeq());
-				Pair<Double, DpMatrix> bResult = BackwardAlgorithm.run(rHMM, 
-																	   r.getSeq());
-				ForwardAlgorithm.debug = 0;
+				if (r.getId().equals("2"))
+					System.out.println("SEQ 2 = " + x);
 				
-				double pSeq = fResult.getFirst();
 				
-				//System.out.println("PSEQ: " + pSeq); // TODO REMOVE
+				if (r.getId().equals("2"))
+					ForwardAlgorithm.debug = 0; //TODO
+				
+				Pair<Double, DpMatrix> fResult = ForwardAlgorithm.run(rHMM, x);
+				Pair<Double, DpMatrix> bResult = BackwardAlgorithm.run(rHMM, x);
+				ForwardAlgorithm.debug = 0; // TODO
+				
+				double pSeq = LogTransforms.eExp(fResult.getFirst());
+				
+				System.out.println("PSEQ: " + pSeq); // TODO REMOVE
 				DpMatrix f = fResult.getSecond();
 				DpMatrix b = bResult.getSecond();
 				
 				for (State s : rHMM.getStates())
 				{
 					/*
-					 * Calculate expected counts of the transitions
+					 * Expected counts for transitions
 					 */
 					for (Transition t : s.getTransitions())
 					{
@@ -136,29 +145,29 @@ public class RSEM_HMM
 						
 						if (destState != null)
 						{
-					
 							double tCount = 0.0;
 							
 							for (int i = 0; i < f.getNumColumns() - 1; i++)
 							{		
 								if (!destState.isSilent())
 								{
-									tCount += f.getValue(s, i) * 
+									tCount += LogTransforms.eExp(f.getValue(s, i)) * 
 											  t.getTransitionProbability() * 
 											  destState.getEmissionProb(Character.toString(x.charAt(i))) *
-											  b.getValue(s, i+1);
+											  LogTransforms.eExp(b.getValue(s, i+1));
 								}
 								else
 								{
-									tCount += f.getValue(s, i) * 
+									tCount +=  LogTransforms.eExp(f.getValue(s, i)) * 
 											  t.getTransitionProbability() * 
-											  b.getValue(s, i);
+											  LogTransforms.eExp(b.getValue(s, i));
 								}
 							}
 							
-							//if (s.getId().equals("MUX_DUMMY.1"))
-							//	System.out.println("MUX T COUNT 1? " + (tCount / pSeq));
-							tCount /= pSeq;						
+							if (s.getId().equals("MUX_DUMMY.4"))
+								System.out.println("T Count " + tCount);
+							
+							tCount /= pSeq;
 							
 							z.incrementTransitionCount(t.getOriginId(), 
 													   t.getDestinationId(),
@@ -167,7 +176,7 @@ public class RSEM_HMM
 					}
 					
 					/*
-					 * Emission probabilities for non-silent states
+					 * Expected emission counts for non-silent states
 					 */
 					if (!s.isSilent())
 					{
@@ -182,37 +191,34 @@ public class RSEM_HMM
 						for (int i = 0; i < x.length(); i++)
 						{	
 							Character symbol = x.charAt(i);
-							double val = f.getValue(s, i+1) * b.getValue(s, i+1);
+							double val = LogTransforms.eExp(f.getValue(s, i+1)) * 
+										 LogTransforms.eExp(b.getValue(s, i+1));
 							symCounts.put(symbol, symCounts.get(symbol) + val);
-							//System.out.println(symCounts); // TODO
-						}
+						}						
 						
 						/*
 						 * Update the counts in the counts data structure
 						 */
 						for (Entry<Character, Double> e : symCounts.entrySet())
 						{
-							if (pSeq > 10E-256)
-							{
-								z.incrementEmissionCount(s.getId(), 
+							z.incrementEmissionCount(s.getId(), 
 													 e.getKey().toString(), 
 													 e.getValue() / pSeq);
-							}
 						}	
-					}	
+					}
 				}
+				
+				
 			}
 			
 		}
-		
-		System.out.println("*************************** NEW ITERATION **********************************");		
 		
 		return z;
 	}
 	
 	public static HMMConstruct mStep(HMMParameterCounts z, 
 									 HMMConstruct hConstruct)
-	{
+	{			
 		for (State s : hConstruct.getMainHMM().getStates())
 		{
 			/*
@@ -222,6 +228,13 @@ public class RSEM_HMM
 			for (Transition t : s.getTransitions())
 			{
 				sum += z.getTransitionProb(t.getOriginId(), t.getDestinationId());
+			}
+		
+			//TODO
+			if (s.getId().equals("MUX_DUMMY.4"))
+			{
+				System.out.println("COUNTER STATE FOR 2:");
+				System.out.println(z.getStateById("MUX_DUMMY.4"));
 			}
 			
 			// TODO
@@ -248,7 +261,7 @@ public class RSEM_HMM
 						   .getTransitionProbability()); */
 						   
 				
-				if (sum > 10E-256)
+				if (sum > 0)
 				{
 					hConstruct.getMainHMM().getStateById(s.getId())
 								   .getTransition(destId)
@@ -272,7 +285,7 @@ public class RSEM_HMM
 			 * Update emission probabilities
 			 */
 			sum = 0.0;
-			if (!s.isSilent())
+			if (!s.isSilent() && !(s instanceof StateParamsTied))
 			{
 				for (Character c : Common.DNA_ALPHABET)
 				{
@@ -282,7 +295,7 @@ public class RSEM_HMM
 				for (Character c : Common.DNA_ALPHABET)
 				{
 					double eCount = z.getEmissionProb(s.getId(), c.toString()); 
-					if (sum > 10E-256)
+					if (sum > 0)
 					{
 						hConstruct.getMainHMM().getStateById(s.getId())
 										   .addEmission(c.toString(), eCount / sum);
@@ -293,6 +306,32 @@ public class RSEM_HMM
 						   					   .addEmission(c.toString(), 0.0);
 					}
 				}
+			}
+		}
+		
+		/*
+		 * Update emission probabilities for tied insertion state emission
+		 * parameters
+		 */
+		double sum = 0.0;
+		for (Character c : Common.DNA_ALPHABET)
+		{
+			sum += z.getTiedEmissionPrams(HMMConstructBuilder.INSERTION_PARAMS_ID) 
+				    .get(c.toString());
+		}
+		for (Character c : Common.DNA_ALPHABET)
+		{
+			double eCount = z.getTiedEmissionPrams(HMMConstructBuilder.INSERTION_PARAMS_ID) 
+				    		 .get(c.toString());
+			if (sum > 0)
+			{
+				StateParamsTied.tiedEmissionParams.get(HMMConstructBuilder.INSERTION_PARAMS_ID)
+							   .put(c.toString(), eCount / sum);
+			}
+			else
+			{
+				StateParamsTied.tiedEmissionParams.get(HMMConstructBuilder.INSERTION_PARAMS_ID)
+				   								  .put(c.toString(), 0.0);
 			}
 		}
 		
@@ -313,15 +352,17 @@ public class RSEM_HMM
 			
 			if (rHMM != null)
 			{
+				//if (r.getId().equals("2"))
+				//	System.out.println(rHMM);
 				ForwardAlgorithm.debug = 0; // TODO FIX
 				Pair<Double, DpMatrix> result = ForwardAlgorithm.run(rHMM, r.getSeq());
 				ForwardAlgorithm.debug = 0;
 				double pSeq = result.getFirst();
 				
 				// TODO REMOVE
-				//System.out.println(r.getId() + " with P = " + pSeq );
+				System.out.println(r.getId() + " with P = " + pSeq );
 				
-				p += -Math.log(pSeq);				
+				p += pSeq;				
 			}
 		}
 		return p;
