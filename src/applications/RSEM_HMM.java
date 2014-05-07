@@ -11,22 +11,30 @@ import hmm.algorithms.BackwardAlgorithm;
 import hmm.algorithms.DpMatrix;
 import hmm.algorithms.ForwardAlgorithm;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import LogTransforms.LogTransforms;
+
 
 import pair.Pair;
 import rsem.model.ExpressionLevels;
+import rsem.model.no_indels.SubstitutionMatrix;
+import sequence.Read;
 import sequence.Reads;
 import sequence.Sequence;
+import sequence.SimulatedReads;
 import sequence.Transcripts;
 import test.Core;
 
 import common.Common;
+import common.LogP;
 
 import data.readers.Alignments;
+import data.readers.FASTAReader;
+import data.readers.MappingReader;
+import data.readers.SAMReader;
 
 public class RSEM_HMM 
 {
@@ -37,6 +45,7 @@ public class RSEM_HMM
 	
 	public static void main(String[] args)
 	{
+		/*
 		Core.TestKit kit = Core.getDummyTestKit();
 		
 		Transcripts ts = kit.transcripts();
@@ -44,18 +53,33 @@ public class RSEM_HMM
 		Alignments aligns = kit.alignments();
 				
 		HMMConstructBuilder builder = new HMMConstructBuilder();
-		HMMConstruct hmmC = builder.buildHMMConstruct(ts, rs, aligns);	
-			
+		HMMConstruct hmmC = builder.buildHMMConstruct(ts, aligns);
+		*/	
+		
+		SimulatedReads rs = FASTAReader.readSimulatedReads(args[0]);
+		MappingReader.recoverMapping(args[1], rs);
+		
+		Transcripts ts = FASTAReader.readTranscripts(args[2]);
+
+		File samFile = new File(args[3]);
+		Alignments aligns = SAMReader.readCandidateAlignments(samFile, 
+															  rs, 
+															  ts, 
+															  false);
+		
+		
 		//System.out.println(hmmC.getReadHMM("3"));
-		RSEM_HMM.EM(rs, ts, aligns);
+		ExpressionLevels el = RSEM_HMM.EM(rs, ts, aligns);
+		
+		System.out.println(el);
 	}
 	
 	public static ExpressionLevels EM( Reads rs,
-						   			   Transcripts ts,
+									   Transcripts ts,
 						   			   Alignments cAligns) 
 	{	
 		HMMConstructBuilder builder = new HMMConstructBuilder();
-		HMMConstruct hConstruct = builder.buildHMMConstruct(ts, rs, cAligns);
+		HMMConstruct hConstruct = builder.buildHMMConstruct(ts, cAligns);
 		HMMParameterCounts z = new HMMParameterCounts(hConstruct.getMainHMM());
 		
 		/*
@@ -69,12 +93,12 @@ public class RSEM_HMM
 			System.out.println("*************************** NEW ITERATION **********************************");		
 			
 			prevProbData = probData;
-			probData = probabilityOfData(rs, ts, hConstruct);	
+			probData = probabilityOfData(rs, cAligns, hConstruct);	
 						
 			/*
 			 * E-Step
 			 */
-			z = eStep(rs, z, hConstruct);
+			z = eStep(rs, cAligns, z, hConstruct);
 			
 			System.out.println("---------------------------- M-STEP ------------------------------------");
 			
@@ -87,12 +111,23 @@ public class RSEM_HMM
 			if (debug > 0)
 				System.out.println("Current probability of data: " + probData);
 		}
+		
+		//System.out.println(hConstruct.getMainHMM());
 
 		ExpressionLevels el = new ExpressionLevels(ts);
+		
+		for (Transition t : hConstruct.getMainHMM().getBeginState().getTransitions())
+		{
+			String tId = t.getDestinationId().split("_")[1];
+			double tProb = LogP.exp(t.getTransitionProbability());
+			el.setExpressionLevel(tId, tProb);
+		}
+		
 		return el;
 	}
 	
 	public static HMMParameterCounts eStep(Reads rs, 
+										   Alignments aligns,
 							 			   HMMParameterCounts z,
 							 			   HMMConstruct hConstruct)
 	{ 
@@ -104,112 +139,147 @@ public class RSEM_HMM
 		/*
 		 * Calculate expected value of all emissions and transitions
 		 */
-		for (Sequence r : rs.getSequences())
+		for(Object[] o : aligns.getAlignments())
 		{
-			HMM rHMM = hConstruct.getReadHMM(r.getId());
+			String rId = (String) o[0];
+			Boolean orient = (Boolean) o[3];
 			
-			if (rHMM != null)
+			Read r = (Read) rs.getSequence(rId);
+			HMM rHMM = hConstruct.getReadHMM(rId);
+			
+		
+			/*
+			 * Reverse complemiment the string according to alignment
+			 */
+			String x = r.getSeq();
+			if (orient == Common.REVERSE_COMPLIMENT_ORIENTATION)
 			{
-				// TODO
-				//if (r.getId().equals("2"))
-				//{
-				//	System.out.println(rHMM);
-				//}
-					
-				String x = r.getSeq();
-				if (r.getId().equals("2"))
-					System.out.println("SEQ 2 = " + x);
-				
-				
-				if (r.getId().equals("2"))
-					ForwardAlgorithm.debug = 0; //TODO
-				
-				Pair<Double, DpMatrix> fResult = ForwardAlgorithm.run(rHMM, x);
-				Pair<Double, DpMatrix> bResult = BackwardAlgorithm.run(rHMM, x);
-				ForwardAlgorithm.debug = 0; // TODO
-				
-				double pSeq = LogTransforms.eExp(fResult.getFirst());
-				
-				System.out.println("PSEQ: " + pSeq); // TODO REMOVE
-				DpMatrix f = fResult.getSecond();
-				DpMatrix b = bResult.getSecond();
-				
-				for (State s : rHMM.getStates())
+				x = Common.reverseCompliment(x);
+			}
+			
+	
+			if (r.getId().equals("1"))
+				ForwardAlgorithm.debug = 0; //TODO
+			Pair<Double, DpMatrix> fResult = ForwardAlgorithm.run(rHMM, x);
+			Pair<Double, DpMatrix> bResult = BackwardAlgorithm.run(rHMM, x);
+			ForwardAlgorithm.debug = 0; // TODO
+			
+			double pSeq = fResult.getFirst();
+			
+			System.out.println("SEQ " + rId + ": " + x + ", PSEQ: " + LogP.exp(pSeq)); // TODO
+
+			DpMatrix f = fResult.getSecond();
+			DpMatrix b = bResult.getSecond();
+			
+			if (rId.equals("1"))
+			{
+				//System.out.println(rHMM);
+				//ForwardAlgorithm.debug = 2; // TODO FIX
+			}
+			
+			for (State s : rHMM.getStates())
+			{
+				/*
+				 * Expected counts for transitions
+				 */
+				for (Transition t : s.getTransitions())
 				{
-					/*
-					 * Expected counts for transitions
-					 */
-					for (Transition t : s.getTransitions())
-					{
-						State destState = rHMM.getStateById(t.getDestinationId());
-						
-						if (destState != null)
-						{
-							double tCount = 0.0;
-							
-							for (int i = 0; i < f.getNumColumns() - 1; i++)
-							{		
-								if (!destState.isSilent())
-								{
-									tCount += LogTransforms.eExp(f.getValue(s, i)) * 
-											  t.getTransitionProbability() * 
-											  destState.getEmissionProb(Character.toString(x.charAt(i))) *
-											  LogTransforms.eExp(b.getValue(s, i+1));
-								}
-								else
-								{
-									tCount +=  LogTransforms.eExp(f.getValue(s, i)) * 
-											  t.getTransitionProbability() * 
-											  LogTransforms.eExp(b.getValue(s, i));
-								}
-							}
-							
-							if (s.getId().equals("MUX_DUMMY.4"))
-								System.out.println("T Count " + tCount);
-							
-							tCount /= pSeq;
-							
-							z.incrementTransitionCount(t.getOriginId(), 
-													   t.getDestinationId(),
-													   tCount);
-						}
-					}
+					State destState = rHMM.getStateById(t.getDestinationId());
 					
-					/*
-					 * Expected emission counts for non-silent states
-					 */
-					if (!s.isSilent())
+					if (destState != null)
 					{
-						/*
-						 * Count emissions along the read
-						 */
-						Map<Character, Double> symCounts = new HashMap<Character, Double>();
-						for (Character c : Common.DNA_ALPHABET)
-						{
-							symCounts.put(c, 0.0);
+						double tCount = Double.NaN;
+						
+						for (int i = 0; i < f.getNumColumns() - 1; i++)
+						{		
+							if (!destState.isSilent())
+							{
+								/*
+								 * tCount = f(s,i) * transitionP * emissionP * b(s,i+1)
+								 */
+								double product;
+								product = LogP.prod(f.getValue(s, i), t.getTransitionProbability());
+								product = LogP.prod(product, destState.getEmissionProb(Character.toString(x.charAt(i))));
+								product = LogP.prod(product, b.getValue(destState, i+1));
+								tCount = LogP.sum(tCount, product);
+							}
+							else
+							{
+								
+								/*
+								 * tCount = f(s,i) * transitionP * b(s,i)
+								 */
+								double product;
+								product = LogP.prod(f.getValue(s, i), t.getTransitionProbability());
+								product = LogP.prod(product, b.getValue(destState, i));
+								tCount = LogP.sum(tCount, product);
+							}
 						}
-						for (int i = 0; i < x.length(); i++)
-						{	
-							Character symbol = x.charAt(i);
-							double val = LogTransforms.eExp(f.getValue(s, i+1)) * 
-										 LogTransforms.eExp(b.getValue(s, i+1));
-							symCounts.put(symbol, symCounts.get(symbol) + val);
-						}						
+							
+						/*
+						if (rId.equals("1") && s.getId().equals("M_3_DUMMY.1"));
+						{
+							System.out.println("LOOK!!");
+							System.out.println(z.getStateById("M_3_DUMMY.1"));
+							System.out.println("TOTAL: " + LogP.exp(tCount));
+						}
+						System.out.println();*/
 						
 						/*
-						 * Update the counts in the counts data structure
+						 * Divide by probability of the sequence
 						 */
-						for (Entry<Character, Double> e : symCounts.entrySet())
-						{
-							z.incrementEmissionCount(s.getId(), 
-													 e.getKey().toString(), 
-													 e.getValue() / pSeq);
-						}	
+						tCount = LogP.div(tCount, pSeq);
+						//System.out.println(tCount);
+						
+						/*
+						 * Increment count
+						 */
+						z.incrementTransitionCount(t.getOriginId(), 
+												   t.getDestinationId(),
+												   tCount);
 					}
 				}
 				
 				
+				
+				/*
+				 * Expected emission counts for non-silent states
+				 */
+				if (!s.isSilent())
+				{
+					/*
+					 * Count emissions along the read
+					 */
+					Map<Character, Double> symCounts = new HashMap<Character, Double>();
+					for (Character c : Common.DNA_ALPHABET)
+					{
+						symCounts.put(c, Double.NaN);
+					}
+					for (int i = 0; i < x.length(); i++)
+					{	
+						Character symbol = x.charAt(i);
+						
+						double val = LogP.prod(f.getValue(s, i+1), 
+											   b.getValue(s, i+1));
+						
+						symCounts.put(symbol, LogP.sum(symCounts.get(symbol), val));
+					}	
+											
+					/*
+					 * Update the counts in the counts data structure
+					 */
+					for (Entry<Character, Double> e : symCounts.entrySet())
+					{
+						z.incrementEmissionCount(s.getId(), 
+												 e.getKey().toString(), 
+												 LogP.div(e.getValue(), pSeq));
+					}
+					
+				}
 			}
+				
+				
+			
 			
 		}
 		
@@ -221,29 +291,18 @@ public class RSEM_HMM
 	{			
 		for (State s : hConstruct.getMainHMM().getStates())
 		{
+			
 			/*
 			 * Sum counts over transitions outgoing from this state
 			 */
-			double sum = 0.0;
+			double sum = Double.NaN;
 			for (Transition t : s.getTransitions())
 			{
-				sum += z.getTransitionProb(t.getOriginId(), t.getDestinationId());
+				sum = LogP.sum(sum,
+							   z.getTransitionProb(t.getOriginId(), 
+									   			   t.getDestinationId()));
 			}
 		
-			//TODO
-			if (s.getId().equals("MUX_DUMMY.4"))
-			{
-				System.out.println("COUNTER STATE FOR 2:");
-				System.out.println(z.getStateById("MUX_DUMMY.4"));
-			}
-			
-			// TODO
-			/*
-			System.out.println("SUM " + sum);
-			if (sum == 0.0)
-				System.out.println("WARNING SUM IS ZERO: " + s.getId());
-			if (sum >= 1)
-				System.out.println("ERROR SUM IS GREATER THAN 1: " + s.getId());*/
 				
 			/*
 			 * Update transition probabilities
@@ -255,115 +314,111 @@ public class RSEM_HMM
 				
 				double tCount = z.getTransitionProb(origId, destId);
 				
-				/*
-				System.out.println("T PROB 1:" + hConstruct.getMainHMM().getStateById(s.getId())
-						   .getTransition(destId)
-						   .getTransitionProbability()); */
-						   
-				
-				if (sum > 0)
-				{
+				if (LogP.exp(sum) > 0)
+				{					
 					hConstruct.getMainHMM().getStateById(s.getId())
-								   .getTransition(destId)
-								   .setTransitionProbability(tCount / sum);
+								   		   .getTransition(destId)
+								   		   .setTransitionProbability(LogP.div(tCount, sum));
 				}
 				else
 				{
 					hConstruct.getMainHMM().getStateById(s.getId())
 					   .getTransition(destId)
-					   .setTransitionProbability(0.0);
+					   .setTransitionProbability(LogP.ln(0.0));
 				}
-			
-				
-				/*
-				System.out.println("T PROB 2:" + hConstruct.getMainHMM().getStateById(s.getId())
-					   .getTransition(destId)
-					   .getTransitionProbability()); */
 			}
 			
 			/*
 			 * Update emission probabilities
 			 */
-			sum = 0.0;
+			sum = Double.NaN;
 			if (!s.isSilent() && !(s instanceof StateParamsTied))
 			{
 				for (Character c : Common.DNA_ALPHABET)
 				{
-					sum += z.getEmissionProb(s.getId(), c.toString());
+					sum = LogP.sum(sum, z.getEmissionProb(s.getId(), c.toString()));
 				}
 				
 				for (Character c : Common.DNA_ALPHABET)
 				{
 					double eCount = z.getEmissionProb(s.getId(), c.toString()); 
-					if (sum > 0)
+					
+					if (!Double.isNaN(sum))
 					{
 						hConstruct.getMainHMM().getStateById(s.getId())
-										   .addEmission(c.toString(), eCount / sum);
+										   	   .addEmission(c.toString(), LogP.div(eCount, sum));
 					}
 					else
 					{
 						hConstruct.getMainHMM().getStateById(s.getId())
-						   					   .addEmission(c.toString(), 0.0);
+						   					   .addEmission(c.toString(), LogP.ln(0.0));
 					}
 				}
 			}
+			
+			/*if (s.getId().equals("M_8_DUMMY.1_RC"))
+			{
+				System.out.println("New state: " + s);
+			}*///TODO
 		}
 		
 		/*
 		 * Update emission probabilities for tied insertion state emission
 		 * parameters
 		 */
-		double sum = 0.0;
+		double sum = Double.NaN;
 		for (Character c : Common.DNA_ALPHABET)
 		{
-			sum += z.getTiedEmissionPrams(HMMConstructBuilder.INSERTION_PARAMS_ID) 
-				    .get(c.toString());
+			sum = LogP.sum(sum, z.getTiedEmissionPrams(HMMConstructBuilder.INSERTION_PARAMS_ID) 
+				    			 .get(c.toString()));		
 		}
 		for (Character c : Common.DNA_ALPHABET)
 		{
 			double eCount = z.getTiedEmissionPrams(HMMConstructBuilder.INSERTION_PARAMS_ID) 
 				    		 .get(c.toString());
-			if (sum > 0)
+			
+			if (!Double.isNaN(sum))
 			{
 				StateParamsTied.tiedEmissionParams.get(HMMConstructBuilder.INSERTION_PARAMS_ID)
-							   .put(c.toString(), eCount / sum);
+							   .put(c.toString(), LogP.div(eCount, sum));
 			}
 			else
 			{
 				StateParamsTied.tiedEmissionParams.get(HMMConstructBuilder.INSERTION_PARAMS_ID)
-				   								  .put(c.toString(), 0.0);
+				   								  .put(c.toString(), LogP.ln(0.0));
 			}
 		}
-		
-		// TODO REMOVE
-		//System.out.println(hConstruct.getMainHMM());
 		
 		return hConstruct;
 	}
 	
 	public static double probabilityOfData( Reads rs, 
-									 	 	Transcripts ts,
+											Alignments aligns,
 									 	 	HMMConstruct hConstruct)
-	{
-		double p = 0.0;
-		for (Sequence r : rs.getSequences())
+	{		
+		double p = Double.NaN;
+		for (Object[] o : aligns.getAlignments())
 		{
-			HMM rHMM = hConstruct.getReadHMM(r.getId());
+			String rId = (String) o[0];
+			Boolean orient = (Boolean) o[3];
+		
+			System.out.println("RID: " + rId);
 			
-			if (rHMM != null)
+			Read r = rs.getRead(rId);
+			String x = r.getSeq();
+			if (orient == Common.REVERSE_COMPLIMENT_ORIENTATION)
 			{
-				//if (r.getId().equals("2"))
-				//	System.out.println(rHMM);
-				ForwardAlgorithm.debug = 0; // TODO FIX
-				Pair<Double, DpMatrix> result = ForwardAlgorithm.run(rHMM, r.getSeq());
-				ForwardAlgorithm.debug = 0;
-				double pSeq = result.getFirst();
-				
-				// TODO REMOVE
-				System.out.println(r.getId() + " with P = " + pSeq );
-				
-				p += pSeq;				
+				x = Common.reverseCompliment(x);
 			}
+			
+			HMM rHMM = hConstruct.getReadHMM(rId);
+			
+			Pair<Double, DpMatrix> result = ForwardAlgorithm.run(rHMM, x);
+			ForwardAlgorithm.debug = 0;
+			double pSeq = result.getFirst();
+						
+			p = LogP.sum(p, pSeq);				
+			
 		}
 		return p;
 	}

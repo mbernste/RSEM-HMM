@@ -17,7 +17,7 @@ public class DpMatrixElement
 	/**
 	 * This element's value
 	 */
-	private double value;
+	private double value = Double.NaN;
 	
 	public double getValue()
 	{

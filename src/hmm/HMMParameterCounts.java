@@ -3,9 +3,8 @@ package hmm;
 import java.util.HashMap;
 import java.util.Map;
 
-import LogTransforms.LogTransforms;
+import common.LogP;
 
-import common.Common;
 
 public class HMMParameterCounts extends HMM 
 {
@@ -43,11 +42,11 @@ public class HMMParameterCounts extends HMM
 		{
 			for (Transition t : s.getTransitions())
 			{
-				t.setTransitionProbability(LogTransforms.eLn(0.0));
+				t.setTransitionProbability(LogP.ln(0.0));
 			}
 			for (String str : s.getEmissionProbabilites().keySet())
 			{
-				s.addEmission(str, LogTransforms.eLn(0.0));
+				s.addEmission(str, LogP.ln(0.0));
 			}
 		}
 	}
@@ -68,7 +67,7 @@ public class HMMParameterCounts extends HMM
 		
 		this.states.getStateById(stateId)
 				   .getEmissionProbabilites()
-				   .put(symbol, value + currVal);
+				   .put(symbol, LogP.sum(currVal, value));
 	}
 	
 	public Map<String, Double> getTiedEmissionPrams(String paramsKey)

@@ -6,7 +6,9 @@ import hmm.State;
 import java.util.Collection;
 import java.util.ArrayList;
 
-import LogTransforms.LogTransforms;
+import common.LogP;
+
+
 
 import pair.Pair;
 
@@ -52,7 +54,7 @@ public class BackwardAlgorithm
 				{
 					double bValue;
 					double tProb;
-					double eProb = LogTransforms.eLn(1.0);
+					double eProb = LogP.ln(1.0);
 					
 					if (forwardState.isSilent()) // Transitions to silent states
 					{
@@ -73,7 +75,7 @@ public class BackwardAlgorithm
 															 forwardState.getId() 
 															  );
 					}
-					sum = LogTransforms.eLnSum(sum, LogTransforms.eLnProduct( LogTransforms.eLnProduct(tProb, eProb), bValue));
+					sum = LogP.sum(sum, LogP.prod( LogP.prod(tProb, eProb), bValue));
 				}
 				
 				// Set the new value in the DP matrix
@@ -92,7 +94,7 @@ public class BackwardAlgorithm
 					{
 						double bValue;
 						double tProb;
-						double eProb = LogTransforms.eLn(1.0);
+						double eProb = LogP.ln(1.0);
 						
 						if (forwardState.isSilent()) // Transitions to silent states
 						{
@@ -115,7 +117,7 @@ public class BackwardAlgorithm
 																  );
 						}
 									
-						sum = LogTransforms.eLnSum(sum, LogTransforms.eLnProduct( LogTransforms.eLnProduct(tProb, eProb), bValue));
+						sum = LogP.sum(sum, LogP.prod( LogP.prod(tProb, eProb), bValue));
 					}
 					
 					// Set the new value in the DP matrix
@@ -154,7 +156,7 @@ public class BackwardAlgorithm
 		 */
 		for (State state : model.getStates())
 		{
-			dpMatrix.setValue(state, dpMatrix.getNumColumns() - 1, LogTransforms.eLn(1.0));
+			dpMatrix.setValue(state, dpMatrix.getNumColumns() - 1, LogP.ln(1.0));
 		}
 		
 		/*

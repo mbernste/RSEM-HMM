@@ -31,9 +31,9 @@ public class TestRSEM_HMM
 		Transcript t = ts.getTranscript(0);
 		
 		HMMConstructBuilder builder = new HMMConstructBuilder();
-		HMMConstruct hmmC = builder.buildHMMConstruct(ts, rs, aligns);		
+		HMMConstruct hmmC = builder.buildHMMConstruct(ts, aligns);		
 				
-		System.out.println("FULL PROBABILITY: " + RSEM_HMM.probabilityOfData(rs, ts, hmmC));
+		System.out.println("FULL PROBABILITY: " + RSEM_HMM.probabilityOfData(rs, aligns, hmmC));
 	}
 	
 	public static void testEM()
@@ -47,7 +47,7 @@ public class TestRSEM_HMM
 		Transcript t = ts.getTranscript(0);
 		
 		HMMConstructBuilder builder = new HMMConstructBuilder();
-		HMMConstruct hmmC = builder.buildHMMConstruct(ts, rs, aligns);	
+		HMMConstruct hmmC = builder.buildHMMConstruct(ts, aligns);	
 		
 		RSEM_HMM.EM(rs, ts, aligns);
 	}

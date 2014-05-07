@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import LogTransforms.LogTransforms;
+
 
 import common.Common;
+import common.LogP;
 import data.readers.Alignments;
 
 import sequence.Reads;
@@ -49,7 +50,6 @@ public class HMMConstructBuilder
 	private Map<String, HMM> subHMMs;
 	
 	public HMMConstruct buildHMMConstruct(Transcripts ts, 
-										  Reads rs, 
 										  Alignments cAligns)
 	{	
 		mainHmm = new HMM();
@@ -62,6 +62,7 @@ public class HMMConstructBuilder
 		State startState = new StateSilent();
 		startState.setId("START");
 		mainHmm.states.addState(startState);
+		mainHmm.setBeginStateId("START");
 		
 		/*
 		 * Build a profile HMM structure for each candidate alignment
@@ -71,7 +72,6 @@ public class HMMConstructBuilder
 			String rId = (String) o[0];
 			String tId = (String) o[1];
 			int startPos = (Integer) o[2];
-			boolean orientation = (Boolean) o[3];
 			
 			/*
 			 * Create sub-HMM for this read if it does not exist
@@ -86,8 +86,7 @@ public class HMMConstructBuilder
 			
 			buildHMMForAlignment(rId,
 								 ts.getTranscript(tId), 
-								 startPos, 
-								 orientation);	
+								 startPos);	
 		}
 		
 		/*
@@ -98,7 +97,7 @@ public class HMMConstructBuilder
 		{
 			StateParamsTied.tiedEmissionParams
 						   .get(INSERTION_PARAMS_ID)
-						   .put(Character.toString(symbol), LogTransforms.eLn(0.25));
+						   .put(Character.toString(symbol), LogP.ln(0.25));
 		}
 		
 		/*
@@ -111,7 +110,7 @@ public class HMMConstructBuilder
 			m.normalizeTransitionProbabilities();
 			startState.addTransition(new Transition(startState.getId(),
 													m.getId(),
-													LogTransforms.eLn(1.0)));
+													LogP.ln(1.0)));
 		}
 		startState.normalizeTransitionProbabilities();
 		
@@ -127,14 +126,13 @@ public class HMMConstructBuilder
 	
 	public State buildHMMForAlignment(String rId,
 									  Transcript t, 
-									  int startPos, 
-									  boolean orient)
+									  int startPos)
 	{	
 		/*
 		 * Build profile-HMM structure
 		 */
-		buildStates(rId, t, startPos, orient);
-		createInterSeqeunceTransitions(t, startPos, orient);
+		buildStates(rId, t, startPos);
+		createInterSeqeunceTransitions(t, startPos);
 		
 		/*
 		 * Create mux state with connection to all match states
@@ -159,25 +157,22 @@ public class HMMConstructBuilder
 			if (i >= t.length()) break;			
 			
 			muxState.addTransition(new Transition(muxState.getId(),
-												  matchStateId(t, i, orient),
-												  LogTransforms.eLn(1.0)));
+												  matchStateId(t, i),
+												  LogP.ln(1.0)));
 		}
 
 		return muxState;
 	}
 	
-	public void buildStates(String rId,
-							Transcript t, 
-			 				int startPos, 
-			 				boolean orient)
+	public void buildStates(String rId, Transcript t, int startPos)
 	{
 		for (int i = startPos; i < startPos +  FACTOR*Common.readLength; i++)
 		{				
 			if (i >= t.length()) break;
 			
-			String mId = matchStateId(t, i, orient);
-			String dId = deleteStateId(t, i, orient);
-			String iId = insertStateId(t, i, orient);
+			String mId = matchStateId(t, i);
+			String dId = deleteStateId(t, i);
+			String iId = insertStateId(t, i);
 			
 			/*
 			 * If the HMM already has states for this region, then we don't 
@@ -191,9 +186,9 @@ public class HMMConstructBuilder
 			{
 				char matchedSymbol = t.getSeq().charAt(i);
 			
-				dState =  createDeleteState(dId, i, orient);
-				iState =  createInsertState(iId, i, orient);
-				mState =  createMatchState(mId, matchedSymbol, i, orient);
+				dState =  createDeleteState(dId, i);
+				iState =  createInsertState(iId, i);
+				mState =  createMatchState(mId, matchedSymbol, i);
 				
 				mainHmm.addState(dState);
 				mainHmm.addState(iState);
@@ -215,8 +210,7 @@ public class HMMConstructBuilder
 	
 	public State createMatchState(String mId, 
 					 			  char matchedSymbol, 
-					 			  int startPos, 
-					 			  boolean orient)
+					 			  int startPos)
 	{
 		State mState = new State();
 		mState.setId(mId);
@@ -230,25 +224,25 @@ public class HMMConstructBuilder
 			if (symbol == matchedSymbol)
 			{
 				mState.addEmission(Character.toString(symbol), 
-								   	   LogTransforms.eLn(1 - (3 * NON_MATCH_P)));
+								   	   LogP.ln(1 - (3 * NON_MATCH_P)));
 			}
 			else
 			{
 				mState.addEmission(Character.toString(symbol), 
-									LogTransforms.eLn(NON_MATCH_P));
+									LogP.ln(NON_MATCH_P));
 			}
 		}
 		
 		return mState;
 	}
 
-	public State createInsertState(String sId, int startPos, boolean orient)
+	public State createInsertState(String sId, int startPos)
 	{
 		State iState = new StateParamsTied(INSERTION_PARAMS_ID, sId);
 		return iState;
 	}
 	
-	public State createDeleteState(String dId, int startPos, boolean orient)
+	public State createDeleteState(String dId, int startPos)
 	{
 		State dState = new StateSilent();
 		dState.setId( dId );
@@ -257,10 +251,8 @@ public class HMMConstructBuilder
 	}
 	
 	public void createInterSeqeunceTransitions(Transcript t, 
-											   int startPos, 
-											   boolean orient)
+											   int startPos)
 	{
-		
 		for (int i = startPos; i < (startPos + FACTOR*Common.readLength) - 1; i++)
 		{
 			if (i >= t.length() - 1) break;
@@ -268,22 +260,21 @@ public class HMMConstructBuilder
 			/*
 			 * Current and next deletion states at given position
 			 */
-			State dState = mainHmm.getStateById(deleteStateId(t, i, orient));
-			State dNextState = mainHmm.getStateById(deleteStateId(t, i+1, orient));
+			State dState = mainHmm.getStateById(deleteStateId(t, i));
+			State dNextState = mainHmm.getStateById(deleteStateId(t, i+1));
 			
 			/*
 			 * Current insertion state at given position
 			 */
-			State iState = mainHmm.getStateById(insertStateId(t, i, orient));
+			State iState = mainHmm.getStateById(insertStateId(t, i));
 			
 			/*
 			 * Current match state at given position
 			 */
-			State mState = mainHmm.getStateById(matchStateId(t, i, orient));
-			State mNextState = mainHmm.getStateById(matchStateId(t, i+1, orient));
+			State mState = mainHmm.getStateById(matchStateId(t, i));
+			State mNextState = mainHmm.getStateById(matchStateId(t, i+1));
 				
-			double p = LogTransforms.eLn(1.0 /3.0);
-			//double p = 1.0 /3.0;
+			double p = LogP.ln(1.0 /3.0);
 			dState.addTransition(new Transition(dState.getId(), 
 												dNextState.getId(),
 												p));
@@ -313,12 +304,11 @@ public class HMMConstructBuilder
 		{
 			if (i >= t.length()) break;
 			
-			State dState = mainHmm.getStateById(deleteStateId(t, i, orient));
-			State iState = mainHmm.getStateById(insertStateId(t, i, orient));
-			State mState = mainHmm.getStateById(matchStateId(t, i, orient));
+			State dState = mainHmm.getStateById(deleteStateId(t, i));
+			State iState = mainHmm.getStateById(insertStateId(t, i));
+			State mState = mainHmm.getStateById(matchStateId(t, i));
 			
-			double p = LogTransforms.eLn(1.0 /3.0);
-			//double p = 1.0 /3.0;
+			double p = LogP.ln(1.0 /3.0);
 			dState.addTransition(new Transition(dState.getId(), 
 												iState.getId(),
 												p));
@@ -333,45 +323,21 @@ public class HMMConstructBuilder
 		}
 	}
 	
-	public String matchStateId(Transcript t, int index, boolean orientation)
+	public String matchStateId(Transcript t, int index)
 	{
 		String id = "M_" + index + "_" + t.getId();
-		if (orientation == Common.FORWARD_ORIENTATION)
-		{
-			id += "_F";
-		}
-		else
-		{
-			id += "_RC";
-		}
 		return id;
 	}
 	
-	public String insertStateId(Transcript t, int index, boolean orientation)
+	public String insertStateId(Transcript t, int index)
 	{
 		String id = "I_" + index + "_" + t.getId();
-		if (orientation == Common.FORWARD_ORIENTATION)
-		{
-			id += "_F";
-		}
-		else
-		{
-			id += "_RC";
-		}
 		return id;
 	}
 	
-	public String deleteStateId(Transcript t, int index, boolean orientation)
+	public String deleteStateId(Transcript t, int index)
 	{
 		String id = "D_" + index + "_" + t.getId();
-		if (orientation == Common.FORWARD_ORIENTATION)
-		{
-			id += "_F";
-		}
-		else
-		{
-			id += "_RC";
-		}
 		return id;
 	}
 	

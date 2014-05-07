@@ -5,6 +5,9 @@ import hmm.State;
 
 import java.util.ArrayList;
 
+import common.LogP;
+
+
 import bimap.BiMap;
 
 public class DpMatrix 
@@ -151,7 +154,7 @@ public class DpMatrix
 			
 			for (int c = 0; c < numCols; c++)
 			{
-				result += (matrix[r][c].getValue() + "\t");
+				result += (LogP.exp(matrix[r][c].getValue()) + "\t");
 			}
 			result += "\n";
 		}

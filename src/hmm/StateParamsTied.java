@@ -4,9 +4,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import LogTransforms.LogTransforms;
+
 
 import common.Common;
+import common.LogP;
 
 public class StateParamsTied extends State
 {
@@ -78,7 +79,7 @@ public class StateParamsTied extends State
 		}
 		else
 		{
-			return LogTransforms.eLn(0.0);
+			return LogP.ln(0.0);
 		}
 	}
 	
@@ -97,7 +98,8 @@ public class StateParamsTied extends State
 			// TODO GENERALIZE THIS!!
 			for (int i = 0; i < Common.DNA_ALPHABET.length; i++)
 			{
-				StateParamsTied.tiedEmissionParams.get(paramsKey).put(Character.toString(Common.DNA_ALPHABET[i]), 0.0);
+				StateParamsTied.tiedEmissionParams.get(paramsKey)
+												  .put(Character.toString(Common.DNA_ALPHABET[i]), LogP.ln(0.0));
 			}
 		}
 	}
@@ -116,7 +118,7 @@ public class StateParamsTied extends State
 		for (Entry<String, Transition> e : transitions.entrySet())
 		{
 			String destStateId = e.getKey();			
-			result += (e.getValue().getTransitionProbability() + 
+			result += (LogP.exp(e.getValue().getTransitionProbability()) + 
 					" --> ");
 			result += ("[" + destStateId + "]");
 			result += "\n";
@@ -127,7 +129,7 @@ public class StateParamsTied extends State
 		for (Entry<String, Double> entry : 
 			 StateParamsTied.tiedEmissionParams.get(this.paramsKey).entrySet())
 		{
-			result += (entry.getKey() + " >> " + entry.getValue() + "\n");
+			result += (entry.getKey() + " >> " + LogP.exp(entry.getValue()) + "\n");
 		}		
 
 		result += "............\n";

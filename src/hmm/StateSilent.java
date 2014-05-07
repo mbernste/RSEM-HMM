@@ -3,7 +3,9 @@ package hmm;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import LogTransforms.LogTransforms;
+import common.LogP;
+
+
 
 public class StateSilent extends State
 {
@@ -42,7 +44,7 @@ public class StateSilent extends State
 	public double getEmissionProb(String symbol)
 	{
 		// TODO CHECK IF THIS IS CORRECT
-		return LogTransforms.eLn(0.0);
+		return LogP.ln(0.0);
 	}
 	
 	@Override
@@ -59,8 +61,8 @@ public class StateSilent extends State
 		for (Entry<String, Transition> e : transitions.entrySet())
 		{
 			String destStateId = e.getKey();			
-			result += (e.getValue().getTransitionProbability() + 
-					" --> ");
+			result += LogP.exp(e.getValue().getTransitionProbability()) + 
+					" --> ";
 			result += ("[" + destStateId + "]");
 			result += "\n";
 		}

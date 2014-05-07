@@ -1,5 +1,7 @@
 package hmm;
 
+import common.LogP;
+
 /**
  * This class implements a transition between two states in the Markov model: 
  * an "origin" state and a "destination" state.  That is, each Transition 
@@ -97,7 +99,7 @@ public class Transition
 	
 	public void incrementTransitionValue(double value)
 	{
-		this.probability += value;
+		this.probability = LogP.sum(this.probability, value);
 	}
 
 }

@@ -7,7 +7,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import LogTransforms.LogTransforms;
+import common.LogP;
+
+
 
 
 /**
@@ -67,7 +69,7 @@ public class State
 
 		for (String str : s.emissionProbs.keySet())
 		{
-			this.emissionProbs.put(str, LogTransforms.eLn(0.0));
+			this.emissionProbs.put(str, LogP.ln(0.0));
 		}
 	}
 	
@@ -128,7 +130,7 @@ public class State
 		}
 		else
 		{
-			return LogTransforms.eLn(0.0);
+			return LogP.ln(0.0);
 		}
 	}
 	
@@ -139,7 +141,7 @@ public class State
 			return transitions.get(destId).getTransitionProbability();
 		}
 		
-		return LogTransforms.eLn(0.0);
+		return LogP.ln(0.0);
 	}
 	
 	public void normalizeTransitionProbabilities()
@@ -147,12 +149,12 @@ public class State
 		double sum = Double.NaN;
 		for (Transition t : transitions.values())
 		{
-			sum = LogTransforms.eLnSum(sum, t.getTransitionProbability());
+			sum = LogP.sum(sum, t.getTransitionProbability());
 		}
 		
 		for (Transition t : transitions.values())
 		{
-			t.setTransitionProbability(LogTransforms.eLnDivision(t.getTransitionProbability(), sum));
+			t.setTransitionProbability(LogP.div(t.getTransitionProbability(), sum));
 		}
 	}
 	
@@ -209,7 +211,7 @@ public class State
 		for (Entry<String, Transition> e : transitions.entrySet())
 		{
 			String destStateId = e.getKey();			
-			result += (Math.pow(Math.E, e.getValue().getTransitionProbability()) + 
+			result += (LogP.exp(e.getValue().getTransitionProbability()) + 
 					" --> ");
 			result += ("[" + destStateId + "]");
 			result += "\n";
@@ -220,7 +222,7 @@ public class State
 		for (Entry<String, Double> entry : 
 			 getEmissionProbabilites().entrySet())
 		{
-			result += (entry.getKey() + " >> " + Math.pow(Math.E, entry.getValue()) + "\n");
+			result += (entry.getKey() + " >> " + LogP.exp(entry.getValue()) + "\n");
 		}		
 
 		result += "............\n";

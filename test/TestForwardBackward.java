@@ -1,6 +1,8 @@
 import java.util.ArrayList;
 
-import LogTransforms.LogTransforms;
+import common.LogP;
+
+
 
 import pair.Pair;
 
@@ -36,22 +38,22 @@ public class TestForwardBackward
 		State F = new State("F");
 		State G = new StateSilent("G");
 		
-		A.addTransition(new Transition("A", "E", LogTransforms.eLn(0.5)));
-		A.addTransition(new Transition("A", "X", LogTransforms.eLn(0.5)));
-		A.addTransition(new Transition("A", "B", LogTransforms.eLn(0.5)));
-		B.addTransition(new Transition("B", "C", LogTransforms.eLn(0.5)));
-		B.addTransition(new Transition("B", "F", LogTransforms.eLn(0.5)));
-		C.addTransition(new Transition("C", "D", LogTransforms.eLn(0.5)));
-		D.addTransition(new Transition("D", "E", LogTransforms.eLn(0.5)));
-		E.addTransition(new Transition("E", "E", LogTransforms.eLn(1.0)));
-		F.addTransition(new Transition("F", "E", LogTransforms.eLn(1.0)));
-		E.addTransition(new Transition("E", "G", LogTransforms.eLn(0.5)));
+		A.addTransition(new Transition("A", "E", LogP.ln(0.5)));
+		A.addTransition(new Transition("A", "X", LogP.ln(0.5)));
+		A.addTransition(new Transition("A", "B", LogP.ln(0.5)));
+		B.addTransition(new Transition("B", "C", LogP.ln(0.5)));
+		B.addTransition(new Transition("B", "F", LogP.ln(0.5)));
+		C.addTransition(new Transition("C", "D", LogP.ln(0.5)));
+		D.addTransition(new Transition("D", "E", LogP.ln(0.5)));
+		E.addTransition(new Transition("E", "E", LogP.ln(1.0)));
+		F.addTransition(new Transition("F", "E", LogP.ln(1.0)));
+		E.addTransition(new Transition("E", "G", LogP.ln(0.5)));
 		
-		E.addEmission("x", LogTransforms.eLn(0.5));
-		E.addEmission("y", LogTransforms.eLn(0.5));
+		E.addEmission("x", LogP.ln(0.5));
+		E.addEmission("y", LogP.ln(0.5));
 		
-		F.addEmission("x", LogTransforms.eLn(0.9));
-		F.addEmission("y", LogTransforms.eLn(0.1));
+		F.addEmission("x", LogP.ln(0.9));
+		F.addEmission("y", LogP.ln(0.1));
 		
 		hmm.addState(B);
 		hmm.addState(D);

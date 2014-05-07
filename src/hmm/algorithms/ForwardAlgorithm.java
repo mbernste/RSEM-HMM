@@ -1,9 +1,10 @@
 package hmm.algorithms;
 
+import common.LogP;
+
 import hmm.HMM;
 import hmm.State;
 
-import LogTransforms.LogTransforms;
 
 import pair.Pair;
 
@@ -16,7 +17,7 @@ import pair.Pair;
  */
 public class ForwardAlgorithm 
 {	
-	public static int debug = 2;
+	public static int debug = 0;
 	
 	/**
 	 * Given a HMM model and sequence generated from the HMM, the forward 
@@ -78,10 +79,10 @@ public class ForwardAlgorithm
 						double tProb  = model.getTransitionProb(lastState.getId(), 
 															    currState.getId());	
 						
-						sum = LogTransforms.eLnSum(sum, LogTransforms.eLnProduct(fValue, tProb));
+						sum = LogP.sum(sum, LogP.prod(fValue, tProb));
 					}	
 					
-					double newFValue = LogTransforms.eLnProduct(sum, eProb);
+					double newFValue = LogP.prod(sum, eProb);
 											
 					/*
 					 *  Set the new value in the DP matrix
@@ -105,7 +106,7 @@ public class ForwardAlgorithm
 					
 					double tProb  = model.getTransitionProb(lastState.getId(), 
 														    currState.getId());
-					sum = LogTransforms.eLnSum(sum, LogTransforms.eLnProduct(fValue, tProb));
+					sum = LogP.sum(sum, LogP.prod(fValue, tProb));
 				}
 				
 				//if (t == 1) System.out.println("State " + currState.getId() + " TIME " + " SUM: " + sum);
@@ -136,7 +137,7 @@ public class ForwardAlgorithm
 			if (!state.isSilent())
 			{
 				double fValue = dpMatrix.getValue(state, dpMatrix.getNumColumns() - 1);
-				sum = LogTransforms.eLnSum(sum, fValue);
+				sum = LogP.sum(sum, fValue);
 			}
 		}
 		
@@ -165,7 +166,7 @@ public class ForwardAlgorithm
 		 *  that we are in the begin state at time step 0
 		 */
  		State beginState = model.getBeginState();
-		dpMatrix.setValue(beginState, 0, LogTransforms.eLn(1.0));
+		dpMatrix.setValue(beginState, 0, LogP.ln(1.0));
 		
 		/*
 		 *  Set initial probabilities for silent states
@@ -185,7 +186,7 @@ public class ForwardAlgorithm
 					double tProb  = model.getTransitionProb(lastState.getId(), 
 														    currState.getId());
 										
-					sum = LogTransforms.eLnSum(sum, LogTransforms.eLnProduct(fValue, tProb));
+					sum = LogP.sum(sum, LogP.prod(fValue, tProb));
 				}	
 				double newFValue = sum;
 					

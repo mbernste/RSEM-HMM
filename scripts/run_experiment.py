@@ -42,8 +42,8 @@ tFile = MOUSE_TRANS
 rLength = 25
 preset = 1
 indels = "false"
-inserts = 5
-deletes = 5
+inserts = 1
+deletes = 1
 
 # Option to sample reference transcripts in order to simulate reads from smaller data
 if options.__dict__['sample']:
@@ -103,7 +103,7 @@ if options.__dict__['align']:
 	# Run bowtie
 	os.chdir(PROJECT_ROOT + "experiments/" + EXP_NAME + "/bowtie")
 	p = subprocess.Popen(["/Users/matthewbernstein/Development/bowtie2-2.2.1/bowtie2", \
-		"--local", "--ma", str(10), "--score-min", "G,1,4",  "-k", "20", "-x", base, "-f", "-U", PROJECT_ROOT + "experiments/" + EXP_NAME  + "/sim_reads/" + EXP_NAME + "_reads.fa", \
+		"--local", "--ma", str(5), "--score-min", "G,1,4",  "-k", "20", "-x", base, "-f", "-U", PROJECT_ROOT + "experiments/" + EXP_NAME  + "/sim_reads/" + EXP_NAME + "_reads.fa", \
 		"-S", PROJECT_ROOT + "experiments/" + EXP_NAME + "/sim_reads/" + EXP_NAME + "_align.txt"])
 
 # Option to run the RSEM algorithm
