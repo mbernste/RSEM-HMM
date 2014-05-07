@@ -31,6 +31,15 @@ public class ExpressionLevels
 		normalize();
 	}
 	
+	public ExpressionLevels(Transcripts ts, boolean zero)
+	{
+		parameters = new HashMap<String, Double>();
+		for (Sequence s : ts.getSequences())
+		{
+			parameters.put(s.getId(), 0.0);
+		}
+	}
+	
 	public void normalize()
 	{
 		double sum = 0.0;

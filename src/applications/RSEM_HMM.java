@@ -114,11 +114,13 @@ public class RSEM_HMM
 		
 		//System.out.println(hConstruct.getMainHMM());
 
-		ExpressionLevels el = new ExpressionLevels(ts);
+		ExpressionLevels el = new ExpressionLevels(ts, true);
+		
+		System.out.println(hConstruct.getMainHMM().getBeginState());
 		
 		for (Transition t : hConstruct.getMainHMM().getBeginState().getTransitions())
 		{
-			String tId = t.getDestinationId().split("_")[1];
+			String tId = t.getDestinationId().split("-")[1];
 			double tProb = LogP.exp(t.getTransitionProbability());
 			el.setExpressionLevel(tId, tProb);
 		}

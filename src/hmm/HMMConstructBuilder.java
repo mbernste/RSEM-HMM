@@ -137,12 +137,12 @@ public class HMMConstructBuilder
 		/*
 		 * Create mux state with connection to all match states
 		 */
-		String muxId = "MUX_" + t.getId();
+		String muxId = "MUX-" + t.getId();
 		State muxState = mainHmm.getStateById(muxId);
 		if (muxState == null)
 		{
 			muxState = new StateSilent();
-			muxState.setId("MUX_" + t.getId() );
+			muxState.setId("MUX-" + t.getId() );
 			muxStates.add(muxState);
 			mainHmm.states.addState(muxState);
 		}
@@ -325,19 +325,19 @@ public class HMMConstructBuilder
 	
 	public String matchStateId(Transcript t, int index)
 	{
-		String id = "M_" + index + "_" + t.getId();
+		String id = "M-" + index + "-" + t.getId();
 		return id;
 	}
 	
 	public String insertStateId(Transcript t, int index)
 	{
-		String id = "I_" + index + "_" + t.getId();
+		String id = "I-" + index + "-" + t.getId();
 		return id;
 	}
 	
 	public String deleteStateId(Transcript t, int index)
 	{
-		String id = "D_" + index + "_" + t.getId();
+		String id = "D-" + index + "-" + t.getId();
 		return id;
 	}
 	
