@@ -20,13 +20,10 @@ import java.util.Map.Entry;
 
 import pair.Pair;
 import rsem.model.ExpressionLevels;
-import rsem.model.no_indels.SubstitutionMatrix;
 import sequence.Read;
 import sequence.Reads;
-import sequence.Sequence;
 import sequence.SimulatedReads;
 import sequence.Transcripts;
-import test.Core;
 
 import common.Common;
 import common.LogP;
@@ -38,24 +35,18 @@ import data.readers.SAMReader;
 
 public class RSEM_HMM 
 {
+	/**
+	 * Debug setting
+	 */
 	private static int debug = 1;
 	
+	/**
+	 * Stopping criteria for the Baum-Welch algorithm
+	 */
 	private static final double EPSILON = 0.001;
 	
-	
 	public static void main(String[] args)
-	{
-		/*
-		Core.TestKit kit = Core.getDummyTestKit();
-		
-		Transcripts ts = kit.transcripts();
-		Reads rs = kit.reads();
-		Alignments aligns = kit.alignments();
-				
-		HMMConstructBuilder builder = new HMMConstructBuilder();
-		HMMConstruct hmmC = builder.buildHMMConstruct(ts, aligns);
-		*/	
-		
+	{	
 		SimulatedReads rs = FASTAReader.readSimulatedReads(args[0]);
 		MappingReader.recoverMapping(args[1], rs);
 		
@@ -66,14 +57,21 @@ public class RSEM_HMM
 															  rs, 
 															  ts, 
 															  false);
-		
-		
-		//System.out.println(hmmC.getReadHMM("3"));
+				
 		ExpressionLevels el = RSEM_HMM.EM(rs, ts, aligns);
 		
 		System.out.println(el);
 	}
 	
+	/**
+	 * Runs a form of the Baum-Welch algorithm for finding the parameters in
+	 * the HMM that maximizes the likelihood of the data.
+	 * 
+	 * @param rs the set of reads
+	 * @param ts the set of reference transcripts
+	 * @param cAligns the candidate alignments considered in the analysis
+	 * @return the estimated expression levels of the reference transcripts
+	 */
 	public static ExpressionLevels EM( Reads rs,
 									   Transcripts ts,
 						   			   Alignments cAligns) 
@@ -88,19 +86,23 @@ public class RSEM_HMM
 		double probData = 1.0;
 		double prevProbData = 0.0;
 		while (Math.abs(probData - prevProbData) > EPSILON)
-		//for (int i = 0; i < 2; i++)
 		{		
-			System.out.println("*************************** NEW ITERATION **********************************");		
+			System.out.println("*************************** NEW ITERATION **" +
+							   "********************************");		
 			
 			prevProbData = probData;
 			probData = probabilityOfData(rs, cAligns, hConstruct);	
-						
+			
+			System.out.println("---------------------------- E-STEP --------" +
+							   "----------------------------");
+			
 			/*
 			 * E-Step
 			 */
 			z = eStep(rs, cAligns, z, hConstruct);
 			
-			System.out.println("---------------------------- M-STEP ------------------------------------");
+			System.out.println("---------------------------- M-STEP --------" +
+							   "----------------------------");
 			
 			/*
 			 * M-Step
@@ -112,13 +114,12 @@ public class RSEM_HMM
 				System.out.println("Current probability of data: " + probData);
 		}
 		
-		//System.out.println(hConstruct.getMainHMM());
-
-		ExpressionLevels el = new ExpressionLevels(ts, true);
-		
-		System.out.println(hConstruct.getMainHMM().getBeginState());
-		
-		for (Transition t : hConstruct.getMainHMM().getBeginState().getTransitions())
+		/*
+		 * Build expression level data
+		 */
+		ExpressionLevels el = new ExpressionLevels(ts, true);		
+		for (Transition t : hConstruct.getMainHMM().getBeginState()
+												   .getTransitions())
 		{
 			String tId = t.getDestinationId().split("-")[1];
 			double tProb = LogP.exp(t.getTransitionProbability());
@@ -128,6 +129,20 @@ public class RSEM_HMM
 		return el;
 	}
 	
+	/**
+	 * 	E-Step
+	 *  <br>
+	 *  <br>
+	 *  Computes the expected counts for each emission and transition through
+	 *  the model
+	 *  
+	 *  @param rs the set of reads
+	 *  @param aligns the candidate alignments considered in the analysis
+	 *  @param z the data structure used for storing the counts from the HMM
+	 *  @param hConstruct the current HMM
+	 *  @return a data structure that stores the expected counts of all 
+	 *  emissions and transitions
+	 */
 	public static HMMParameterCounts eStep(Reads rs, 
 										   Alignments aligns,
 							 			   HMMParameterCounts z,
@@ -151,7 +166,7 @@ public class RSEM_HMM
 			
 		
 			/*
-			 * Reverse complemiment the string according to alignment
+			 * Reverse compliment the string according to alignment
 			 */
 			String x = r.getSeq();
 			if (orient == Common.REVERSE_COMPLIMENT_ORIENTATION)
@@ -159,25 +174,15 @@ public class RSEM_HMM
 				x = Common.reverseCompliment(x);
 			}
 			
-	
-			if (r.getId().equals("1"))
-				ForwardAlgorithm.debug = 0; //TODO
+			/*
+			 * Run forward and backward algorithms
+			 */
 			Pair<Double, DpMatrix> fResult = ForwardAlgorithm.run(rHMM, x);
 			Pair<Double, DpMatrix> bResult = BackwardAlgorithm.run(rHMM, x);
-			ForwardAlgorithm.debug = 0; // TODO
 			
 			double pSeq = fResult.getFirst();
-			
-			System.out.println("SEQ " + rId + ": " + x + ", PSEQ: " + LogP.exp(pSeq)); // TODO
-
 			DpMatrix f = fResult.getSecond();
 			DpMatrix b = bResult.getSecond();
-			
-			if (rId.equals("1"))
-			{
-				//System.out.println(rHMM);
-				//ForwardAlgorithm.debug = 2; // TODO FIX
-			}
 			
 			for (State s : rHMM.getStates())
 			{
@@ -191,18 +196,21 @@ public class RSEM_HMM
 					if (destState != null)
 					{
 						double tCount = Double.NaN;
-						
 						for (int i = 0; i < f.getNumColumns() - 1; i++)
 						{		
 							if (!destState.isSilent())
 							{
 								/*
-								 * tCount = f(s,i) * transitionP * emissionP * b(s,i+1)
+								 * tCount = f(s,i) * transitionP * emissionP *
+								 *  b(s,i+1)
 								 */
 								double product;
-								product = LogP.prod(f.getValue(s, i), t.getTransitionProbability());
-								product = LogP.prod(product, destState.getEmissionProb(Character.toString(x.charAt(i))));
-								product = LogP.prod(product, b.getValue(destState, i+1));
+								product = LogP.prod(f.getValue(s, i), 
+													t.getTransitionProbability());
+								product = LogP.prod(product, 
+													destState.getEmissionProb(Character.toString(x.charAt(i))));
+								product = LogP.prod(product, 
+													b.getValue(destState, i+1));
 								tCount = LogP.sum(tCount, product);
 							}
 							else
@@ -212,26 +220,18 @@ public class RSEM_HMM
 								 * tCount = f(s,i) * transitionP * b(s,i)
 								 */
 								double product;
-								product = LogP.prod(f.getValue(s, i), t.getTransitionProbability());
-								product = LogP.prod(product, b.getValue(destState, i));
+								product = LogP.prod(f.getValue(s, i), 
+													t.getTransitionProbability());
+								product = LogP.prod(product, 
+													b.getValue(destState, i));
 								tCount = LogP.sum(tCount, product);
 							}
 						}
-							
-						/*
-						if (rId.equals("1") && s.getId().equals("M_3_DUMMY.1"));
-						{
-							System.out.println("LOOK!!");
-							System.out.println(z.getStateById("M_3_DUMMY.1"));
-							System.out.println("TOTAL: " + LogP.exp(tCount));
-						}
-						System.out.println();*/
 						
 						/*
 						 * Divide by probability of the sequence
 						 */
 						tCount = LogP.div(tCount, pSeq);
-						//System.out.println(tCount);
 						
 						/*
 						 * Increment count
@@ -276,18 +276,24 @@ public class RSEM_HMM
 												 e.getKey().toString(), 
 												 LogP.div(e.getValue(), pSeq));
 					}
-					
 				}
 			}
-				
-				
-			
-			
 		}
 		
 		return z;
 	}
 	
+	/**
+	 * The M-Step
+	 * <br>
+	 * <br>
+	 * Computes the values for the parameters that maximize the probability of
+	 * the expected counts
+	 * 
+	 * @param z the expected counts of all emissions and transitions
+	 * @param hConstruct the HMM
+	 * @return the updated HMM
+	 */
 	public static HMMConstruct mStep(HMMParameterCounts z, 
 									 HMMConstruct hConstruct)
 	{			
@@ -305,7 +311,6 @@ public class RSEM_HMM
 									   			   t.getDestinationId()));
 			}
 		
-				
 			/*
 			 * Update transition probabilities
 			 */
@@ -348,20 +353,17 @@ public class RSEM_HMM
 					if (!Double.isNaN(sum))
 					{
 						hConstruct.getMainHMM().getStateById(s.getId())
-										   	   .addEmission(c.toString(), LogP.div(eCount, sum));
+										   	   .addEmission(c.toString(), 
+										   			   		LogP.div(eCount, sum));
 					}
 					else
 					{
 						hConstruct.getMainHMM().getStateById(s.getId())
-						   					   .addEmission(c.toString(), LogP.ln(0.0));
+						   					   .addEmission(c.toString(), 
+						   							   		LogP.ln(0.0));
 					}
 				}
 			}
-			
-			/*if (s.getId().equals("M_8_DUMMY.1_RC"))
-			{
-				System.out.println("New state: " + s);
-			}*///TODO
 		}
 		
 		/*
@@ -394,17 +396,27 @@ public class RSEM_HMM
 		return hConstruct;
 	}
 	
+	/**
+	 * Compute the likelihood of the alignments
+	 * 
+	 * @param rs the set of reads
+	 * @param aligns the set of candidate alignments
+	 * @param hConstruct the constructed HMM
+	 * @return the log-probability of the data
+	 */
 	public static double probabilityOfData( Reads rs, 
 											Alignments aligns,
 									 	 	HMMConstruct hConstruct)
 	{		
+		System.out.println("Calculating probability...");
+		
 		double p = Double.NaN;
 		for (Object[] o : aligns.getAlignments())
-		{
+		{			
 			String rId = (String) o[0];
 			Boolean orient = (Boolean) o[3];
-		
-			System.out.println("RID: " + rId);
+					
+			System.out.println("Read " + rId);
 			
 			Read r = rs.getRead(rId);
 			String x = r.getSeq();
@@ -416,7 +428,6 @@ public class RSEM_HMM
 			HMM rHMM = hConstruct.getReadHMM(rId);
 			
 			Pair<Double, DpMatrix> result = ForwardAlgorithm.run(rHMM, x);
-			ForwardAlgorithm.debug = 0;
 			double pSeq = result.getFirst();
 						
 			p = LogP.sum(p, pSeq);				
