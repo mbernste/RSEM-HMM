@@ -42,8 +42,8 @@ tFile = MOUSE_TRANS
 rLength = 25
 preset = 1
 indels = "false"
-inserts = 5
-deletes = 5
+inserts = 2
+deletes = 2
 
 # Option to sample reference transcripts in order to simulate reads from smaller data
 if options.__dict__['sample']:

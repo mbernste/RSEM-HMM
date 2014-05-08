@@ -17,18 +17,31 @@ public class ExpressionLevels
 	private Map<String, Double> parameters;
 	
 	/**
-	 * Constructor.  Sets the expression levels randomly.
+	 * Constructor.  
+	 * <br>
+	 * <br>
+	 * Sets the expression levels randomly.
 	 * 
 	 * @param ts the set of referrence transcripts
 	 */
 	public ExpressionLevels(Transcripts ts)
 	{
-		parameters = new HashMap<String, Double>();
+		this();
 		for (Sequence s : ts.getSequences())
 		{
 			parameters.put(s.getId(), Common.RNG.nextDouble());
 		}
 		normalize();
+	}
+	
+	public ExpressionLevels()
+	{
+		parameters = new HashMap<String, Double>();
+	}
+	
+	public  Map<String, Double> getValues()
+	{
+		return this.parameters;
 	}
 	
 	public ExpressionLevels(Transcripts ts, boolean zero)

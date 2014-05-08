@@ -6,4 +6,5 @@ bin
 .project
 data/
 results
+experiments
 *.class

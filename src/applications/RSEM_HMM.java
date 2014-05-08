@@ -13,10 +13,10 @@ import hmm.algorithms.ForwardAlgorithm;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
-
-
+import java.util.Set;
 
 import pair.Pair;
 import rsem.model.ExpressionLevels;
@@ -87,22 +87,29 @@ public class RSEM_HMM
 		double prevProbData = 0.0;
 		while (Math.abs(probData - prevProbData) > EPSILON)
 		{		
+			/*
 			System.out.println("*************************** NEW ITERATION **" +
 							   "********************************");		
+			*/
 			
 			prevProbData = probData;
 			probData = probabilityOfData(rs, cAligns, hConstruct);	
 			
+			System.out.println("Running E-STEP...");
+			/*
 			System.out.println("---------------------------- E-STEP --------" +
 							   "----------------------------");
+			*/
 			
 			/*
 			 * E-Step
 			 */
 			z = eStep(rs, cAligns, z, hConstruct);
 			
-			System.out.println("---------------------------- M-STEP --------" +
-							   "----------------------------");
+			
+			System.out.println("Running M-STEP...");
+			//System.out.println("---------------------------- M-STEP --------" +
+			//				   "----------------------------");
 			
 			/*
 			 * M-Step
@@ -152,7 +159,12 @@ public class RSEM_HMM
 		 * Reset the counts
 		 */
 		z.resetCounts();
-				
+		
+		/*
+		 * Keeps track of reads already evaluated
+		 */
+		Set<String> evaluated = new HashSet<String>();
+		
 		/*
 		 * Calculate expected value of all emissions and transitions
 		 */
@@ -161,10 +173,18 @@ public class RSEM_HMM
 			String rId = (String) o[0];
 			Boolean orient = (Boolean) o[3];
 			
+			if (evaluated.contains(rId + orient))
+			{
+				/*
+				System.out.println("Already evaluated " + rId + " with " +
+								   "alignment " + orient);*/
+				continue;
+			}
+			evaluated.add(rId + orient);
+			
 			Read r = (Read) rs.getSequence(rId);
 			HMM rHMM = hConstruct.getReadHMM(rId);
 			
-		
 			/*
 			 * Reverse compliment the string according to alignment
 			 */
@@ -183,6 +203,8 @@ public class RSEM_HMM
 			double pSeq = fResult.getFirst();
 			DpMatrix f = fResult.getSecond();
 			DpMatrix b = bResult.getSecond();
+			
+			//System.out.println("Seq: " + x + ", P: " + LogP.exp(pSeq));
 			
 			for (State s : rHMM.getStates())
 			{
@@ -408,15 +430,28 @@ public class RSEM_HMM
 											Alignments aligns,
 									 	 	HMMConstruct hConstruct)
 	{		
-		System.out.println("Calculating probability...");
+		System.out.println("Calculating likelihood of data...");
+		
+		/*
+		 * Tracks the reads that have already been evaluated
+		 */
+		Set<String> evaluated = new HashSet<String>();
 		
 		double p = Double.NaN;
 		for (Object[] o : aligns.getAlignments())
 		{			
 			String rId = (String) o[0];
 			Boolean orient = (Boolean) o[3];
-					
-			System.out.println("Read " + rId);
+				
+			if (evaluated.contains(rId + orient))
+			{
+				//System.out.println("Already evaluated " + rId + " with " +
+				//				   "alignment " + orient);
+				continue;
+			}
+			evaluated.add(rId + orient);
+						
+			//System.out.println("Read " + rId);
 			
 			Read r = rs.getRead(rId);
 			String x = r.getSeq();

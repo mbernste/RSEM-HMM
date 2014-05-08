@@ -126,7 +126,7 @@ public class RSEM
 							 SubstitutionMatrix pM)
 	{ 
 		ExpectedHiddenData z = new ExpectedHiddenData(rs, ts);
-				
+			
 		for (Object[] o : cAligns.getAlignments())
 		{
 			String readId = (String) o[0];
