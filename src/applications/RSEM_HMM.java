@@ -22,6 +22,7 @@ import pair.Pair;
 import rsem.model.ExpressionLevels;
 import sequence.Read;
 import sequence.Reads;
+import sequence.Sequence;
 import sequence.SimulatedReads;
 import sequence.Transcripts;
 
@@ -77,7 +78,7 @@ public class RSEM_HMM
 						   			   Alignments cAligns) 
 	{	
 		HMMConstructBuilder builder = new HMMConstructBuilder();
-		HMMConstruct hConstruct = builder.buildHMMConstruct(ts, cAligns);
+		HMMConstruct hConstruct = builder.buildHMMConstruct(rs, ts, cAligns);
 		HMMParameterCounts z = new HMMParameterCounts(hConstruct.getMainHMM());
 		
 		/*
@@ -161,13 +162,9 @@ public class RSEM_HMM
 		z.resetCounts();
 		
 		/*
-		 * Keeps track of reads already evaluated
-		 */
-		Set<String> evaluated = new HashSet<String>();
-		
-		/*
 		 * Calculate expected value of all emissions and transitions
 		 */
+		Set<String> evaluated = new HashSet<String>();
 		for(Object[] o : aligns.getAlignments())
 		{
 			String rId = (String) o[0];
@@ -175,9 +172,6 @@ public class RSEM_HMM
 			
 			if (evaluated.contains(rId + orient))
 			{
-				/*
-				System.out.println("Already evaluated " + rId + " with " +
-								   "alignment " + orient);*/
 				continue;
 			}
 			evaluated.add(rId + orient);
@@ -194,110 +188,129 @@ public class RSEM_HMM
 				x = Common.reverseCompliment(x);
 			}
 			
+			z = runEStepOnSubHMM(z, rHMM, x);
+		}
+		
+		for (Sequence r : rs.getSequences())
+		{
+			if (!aligns.getAllMappedReads().contains(r.getId()))
+			{
+				HMM rHMM = hConstruct.getReadHMM(r.getId());
+				String x = r.getSeq();
+				z = runEStepOnSubHMM(z, rHMM, x);
+			}
+		}
+		
+		return z;
+	}
+	
+	public static HMMParameterCounts runEStepOnSubHMM(HMMParameterCounts z, 
+													  HMM rHMM, 
+													  String x)
+	{
+		/*
+		 * Run forward and backward algorithms
+		 */
+		Pair<Double, DpMatrix> fResult = ForwardAlgorithm.run(rHMM, x);
+		Pair<Double, DpMatrix> bResult = BackwardAlgorithm.run(rHMM, x);
+		
+		double pSeq = fResult.getFirst();
+		DpMatrix f = fResult.getSecond();
+		DpMatrix b = bResult.getSecond();
+		
+		//System.out.println("Seq: " + x + ", P: " + LogP.exp(pSeq));
+		
+		for (State s : rHMM.getStates())
+		{
 			/*
-			 * Run forward and backward algorithms
+			 * Expected counts for transitions
 			 */
-			Pair<Double, DpMatrix> fResult = ForwardAlgorithm.run(rHMM, x);
-			Pair<Double, DpMatrix> bResult = BackwardAlgorithm.run(rHMM, x);
+			for (Transition t : s.getTransitions())
+			{
+				State destState = rHMM.getStateById(t.getDestinationId());
+				
+				if (destState != null)
+				{
+					double tCount = Double.NaN;
+					for (int i = 0; i < f.getNumColumns() - 1; i++)
+					{		
+						if (!destState.isSilent())
+						{
+							/*
+							 * tCount = f(s,i) * transitionP * emissionP *
+							 *  b(s,i+1)
+							 */
+							double product;
+							product = LogP.prod(f.getValue(s, i), 
+												t.getTransitionProbability());
+							product = LogP.prod(product, 
+												destState.getEmissionProb(Character.toString(x.charAt(i))));
+							product = LogP.prod(product, 
+												b.getValue(destState, i+1));
+							tCount = LogP.sum(tCount, product);
+						}
+						else
+						{
+							
+							/*
+							 * tCount = f(s,i) * transitionP * b(s,i)
+							 */
+							double product;
+							product = LogP.prod(f.getValue(s, i), 
+												t.getTransitionProbability());
+							product = LogP.prod(product, 
+												b.getValue(destState, i));
+							tCount = LogP.sum(tCount, product);
+						}
+					}
+					
+					/*
+					 * Divide by probability of the sequence
+					 */
+					tCount = LogP.div(tCount, pSeq);
+					
+					/*
+					 * Increment count
+					 */
+					z.incrementTransitionCount(t.getOriginId(), 
+											   t.getDestinationId(),
+											   tCount);
+				}
+			}
 			
-			double pSeq = fResult.getFirst();
-			DpMatrix f = fResult.getSecond();
-			DpMatrix b = bResult.getSecond();
 			
-			//System.out.println("Seq: " + x + ", P: " + LogP.exp(pSeq));
 			
-			for (State s : rHMM.getStates())
+			/*
+			 * Expected emission counts for non-silent states
+			 */
+			if (!s.isSilent())
 			{
 				/*
-				 * Expected counts for transitions
+				 * Count emissions along the read
 				 */
-				for (Transition t : s.getTransitions())
+				Map<Character, Double> symCounts = new HashMap<Character, Double>();
+				for (Character c : Common.DNA_ALPHABET)
 				{
-					State destState = rHMM.getStateById(t.getDestinationId());
-					
-					if (destState != null)
-					{
-						double tCount = Double.NaN;
-						for (int i = 0; i < f.getNumColumns() - 1; i++)
-						{		
-							if (!destState.isSilent())
-							{
-								/*
-								 * tCount = f(s,i) * transitionP * emissionP *
-								 *  b(s,i+1)
-								 */
-								double product;
-								product = LogP.prod(f.getValue(s, i), 
-													t.getTransitionProbability());
-								product = LogP.prod(product, 
-													destState.getEmissionProb(Character.toString(x.charAt(i))));
-								product = LogP.prod(product, 
-													b.getValue(destState, i+1));
-								tCount = LogP.sum(tCount, product);
-							}
-							else
-							{
-								
-								/*
-								 * tCount = f(s,i) * transitionP * b(s,i)
-								 */
-								double product;
-								product = LogP.prod(f.getValue(s, i), 
-													t.getTransitionProbability());
-								product = LogP.prod(product, 
-													b.getValue(destState, i));
-								tCount = LogP.sum(tCount, product);
-							}
-						}
-						
-						/*
-						 * Divide by probability of the sequence
-						 */
-						tCount = LogP.div(tCount, pSeq);
-						
-						/*
-						 * Increment count
-						 */
-						z.incrementTransitionCount(t.getOriginId(), 
-												   t.getDestinationId(),
-												   tCount);
-					}
+					symCounts.put(c, Double.NaN);
 				}
-				
-				
-				
+				for (int i = 0; i < x.length(); i++)
+				{	
+					Character symbol = x.charAt(i);
+					
+					double val = LogP.prod(f.getValue(s, i+1), 
+										   b.getValue(s, i+1));
+					
+					symCounts.put(symbol, LogP.sum(symCounts.get(symbol), val));
+				}	
+										
 				/*
-				 * Expected emission counts for non-silent states
+				 * Update the counts in the counts data structure
 				 */
-				if (!s.isSilent())
+				for (Entry<Character, Double> e : symCounts.entrySet())
 				{
-					/*
-					 * Count emissions along the read
-					 */
-					Map<Character, Double> symCounts = new HashMap<Character, Double>();
-					for (Character c : Common.DNA_ALPHABET)
-					{
-						symCounts.put(c, Double.NaN);
-					}
-					for (int i = 0; i < x.length(); i++)
-					{	
-						Character symbol = x.charAt(i);
-						
-						double val = LogP.prod(f.getValue(s, i+1), 
-											   b.getValue(s, i+1));
-						
-						symCounts.put(symbol, LogP.sum(symCounts.get(symbol), val));
-					}	
-											
-					/*
-					 * Update the counts in the counts data structure
-					 */
-					for (Entry<Character, Double> e : symCounts.entrySet())
-					{
-						z.incrementEmissionCount(s.getId(), 
-												 e.getKey().toString(), 
-												 LogP.div(e.getValue(), pSeq));
-					}
+					z.incrementEmissionCount(s.getId(), 
+											 e.getKey().toString(), 
+											 LogP.div(e.getValue(), pSeq));
 				}
 			}
 		}
@@ -395,26 +408,26 @@ public class RSEM_HMM
 		double sum = Double.NaN;
 		for (Character c : Common.DNA_ALPHABET)
 		{
-			sum = LogP.sum(sum, z.getTiedEmissionPrams(HMMConstructBuilder.INSERTION_PARAMS_ID) 
+			sum = LogP.sum(sum, z.getTiedEmissionPrams(HMMConstructBuilder.INSERTION_PARAMS_KEY) 
 				    			 .get(c.toString()));		
 		}
 		for (Character c : Common.DNA_ALPHABET)
 		{
-			double eCount = z.getTiedEmissionPrams(HMMConstructBuilder.INSERTION_PARAMS_ID) 
+			double eCount = z.getTiedEmissionPrams(HMMConstructBuilder.INSERTION_PARAMS_KEY) 
 				    		 .get(c.toString());
 			
 			if (!Double.isNaN(sum))
 			{
-				StateParamsTied.tiedEmissionParams.get(HMMConstructBuilder.INSERTION_PARAMS_ID)
+				StateParamsTied.tiedEmissionParams.get(HMMConstructBuilder.INSERTION_PARAMS_KEY)
 							   .put(c.toString(), LogP.div(eCount, sum));
 			}
 			else
 			{
-				StateParamsTied.tiedEmissionParams.get(HMMConstructBuilder.INSERTION_PARAMS_ID)
+				StateParamsTied.tiedEmissionParams.get(HMMConstructBuilder.INSERTION_PARAMS_KEY)
 				   								  .put(c.toString(), LogP.ln(0.0));
 			}
 		}
-		
+
 		return hConstruct;
 	}
 	
@@ -445,8 +458,6 @@ public class RSEM_HMM
 				
 			if (evaluated.contains(rId + orient))
 			{
-				//System.out.println("Already evaluated " + rId + " with " +
-				//				   "alignment " + orient);
 				continue;
 			}
 			evaluated.add(rId + orient);
@@ -466,8 +477,20 @@ public class RSEM_HMM
 			double pSeq = result.getFirst();
 						
 			p = LogP.sum(p, pSeq);				
-			
 		}
+		
+		for (Sequence r : rs.getSequences())
+		{
+			if (!aligns.getAllMappedReads().contains(r.getId()))
+			{
+				HMM rHMM = hConstruct.getReadHMM(r.getId());
+				String x = r.getSeq();
+				Pair<Double, DpMatrix> result = ForwardAlgorithm.run(rHMM, x);
+				double pSeq = result.getFirst();
+				p = LogP.sum(p, pSeq);	
+			}
+		}
+		
 		return p;
 	}
 }

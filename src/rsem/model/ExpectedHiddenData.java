@@ -419,7 +419,8 @@ public class ExpectedHiddenData
 				 * 
 				 * ts.getSequence(tId).getSeq().charAt(tPos + rPos - 1) == tSymbol)
 				 */
-				if (rs.getSequence(rId).getSeq().charAt(rPos) == rSymbol &&	
+				if (!tId.equals("NOISE") &&
+					rs.getSequence(rId).getSeq().charAt(rPos) == rSymbol &&	
 					ts.getSequence(tId).getSeq().charAt(tPos + rPos) == tSymbol)
 				{					
 					if (debug > 1)
@@ -445,7 +446,9 @@ public class ExpectedHiddenData
 			for (Entry<Integer, K> e : positionToOrientation.entrySet())
 			{
 				int tPos = e.getKey();
-				if (ts.getSequence(tId).getSeq().charAt(rPos + tPos) == tSymbol)
+				
+				if (!tId.equals("NOISE") &&
+					ts.getSequence(tId).getSeq().charAt(rPos + tPos) == tSymbol)
 				{					
 					double s = e.getValue().sumAllValues();	
 					sum += s;

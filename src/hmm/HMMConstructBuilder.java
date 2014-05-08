@@ -31,7 +31,12 @@ public class HMMConstructBuilder
 	/*
 	 * The ID for the tied insertion-state emission parameters
 	 */
-	public static final String INSERTION_PARAMS_ID = "Inert_Params";
+	public static final String INSERTION_PARAMS_KEY = "Inert_Params";
+	
+	/*
+	 * The key for learning the noise parameters
+	 */
+	public static final String NOISE_PARAMS_KEY = "Noise_Params";
 	
 	/*
 	 * The HMM under construction
@@ -49,7 +54,8 @@ public class HMMConstructBuilder
 	 */
 	private Map<String, HMM> subHMMs;
 	
-	public HMMConstruct buildHMMConstruct(Transcripts ts, 
+	public HMMConstruct buildHMMConstruct(Reads rs,
+										  Transcripts ts, 
 										  Alignments cAligns)
 	{	
 		mainHmm = new HMM();
@@ -59,10 +65,32 @@ public class HMMConstructBuilder
 		/*
 		 * The start state that attaches to all profile-HMM "mux" states
 		 */
-		State startState = new StateSilent();
-		startState.setId("START");
+		State startState = new StateSilent("START");
 		mainHmm.states.addState(startState);
 		mainHmm.setBeginStateId("START");
+		
+		/*
+		 * Build noise-HMM
+		 */
+		State firstNoiseState = buildNoiseHMM();
+		startState.addTransition(new Transition("START", 
+												firstNoiseState.getId(), LogP.ln(1.0)));
+		
+		
+		/*
+		 * Build HMM structures for remaining states
+		 */
+		for (Sequence r : rs.getSequences())
+		{
+			String rId = r.getId();
+			if (!subHMMs.containsKey(rId))
+			{
+				HMM rHMM = new HMM();
+				rHMM.states.addState(startState);
+				rHMM.setBeginStateId(startState.getId());
+				subHMMs.put(rId, rHMM);
+			}
+		}
 		
 		/*
 		 * Build a profile HMM structure for each candidate alignment
@@ -73,18 +101,7 @@ public class HMMConstructBuilder
 			String tId = (String) o[1];
 			int startPos = (Integer) o[2];
 			
-			/*
-			 * Create sub-HMM for this read if it does not exist
-			 */
-			if (!subHMMs.containsKey(rId))
-			{
-				HMM rHMM = new HMM();
-				rHMM.states.addState(startState);
-				rHMM.setBeginStateId(startState.getId());
-				subHMMs.put(rId, rHMM);
-			}
-			
-			buildHMMForAlignment(rId,
+			buildHMMForAlignment(subHMMs.get(rId),
 								 ts.getTranscript(tId), 
 								 startPos);	
 		}
@@ -96,7 +113,18 @@ public class HMMConstructBuilder
 		for (char symbol : Common.DNA_ALPHABET)
 		{
 			StateParamsTied.tiedEmissionParams
-						   .get(INSERTION_PARAMS_ID)
+						   .get(INSERTION_PARAMS_KEY)
+						   .put(Character.toString(symbol), LogP.ln(0.25));
+		}
+		
+		/*
+		 * Set initial emission probabilities for all noise states 
+		 * to the uniform distribution.  These parameters are all tied.
+		 */
+		for (char symbol : Common.DNA_ALPHABET)
+		{
+			StateParamsTied.tiedEmissionParams
+						   .get(NOISE_PARAMS_KEY)
 						   .put(Character.toString(symbol), LogP.ln(0.25));
 		}
 		
@@ -124,14 +152,14 @@ public class HMMConstructBuilder
 		return hmmConstruct;
 	}
 	
-	public State buildHMMForAlignment(String rId,
+	public State buildHMMForAlignment(HMM rHMM,
 									  Transcript t, 
 									  int startPos)
 	{	
 		/*
 		 * Build profile-HMM structure
 		 */
-		buildStates(rId, t, startPos);
+		buildStates(rHMM, t, startPos);
 		createInterSeqeunceTransitions(t, startPos);
 		
 		/*
@@ -150,7 +178,7 @@ public class HMMConstructBuilder
 		/*
 		 * Always add this mux state to the HMM corresponding to the read
 		 */
-		subHMMs.get(rId).states.addState(muxState);
+		rHMM.states.addState(muxState);
 		
 		for (int i = startPos; i < startPos + FACTOR*Common.readLength; i++)
 		{
@@ -164,7 +192,18 @@ public class HMMConstructBuilder
 		return muxState;
 	}
 	
-	public void buildStates(String rId, Transcript t, int startPos)
+	public State buildNoiseHMM()
+	{
+		for (int i = 0; i < Common.readLength; i++)
+		{
+			State noiseState = new StateParamsTied(NOISE_PARAMS_KEY, ("NOISE-" + i));
+			mainHmm.addState(noiseState);
+		}
+		
+		return mainHmm.getStateById("NOISE-0");
+	}
+	
+	public void buildStates(HMM rHMM, Transcript t, int startPos)
 	{
 		for (int i = startPos; i < startPos +  FACTOR*Common.readLength; i++)
 		{				
@@ -201,10 +240,9 @@ public class HMMConstructBuilder
 				mState = mainHmm.getStateById(mId);
 			}
 				
-			HMM subHMM = subHMMs.get(rId);
-			subHMM.states.addState(dState);
-			subHMM.states.addState(iState);
-			subHMM.states.addState(mState);
+			rHMM.states.addState(dState);
+			rHMM.states.addState(iState);
+			rHMM.states.addState(mState);
 		}	
 	}
 	
@@ -238,7 +276,7 @@ public class HMMConstructBuilder
 
 	public State createInsertState(String sId, int startPos)
 	{
-		State iState = new StateParamsTied(INSERTION_PARAMS_ID, sId);
+		State iState = new StateParamsTied(INSERTION_PARAMS_KEY, sId);
 		return iState;
 	}
 	

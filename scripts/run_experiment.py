@@ -11,15 +11,18 @@ SCRIPT_ROOT = PROJECT_ROOT + "scripts"
 EXP_NAME = sys.argv[1]
 EXP_ROOT =  "./../experiments/" + EXP_NAME
 EXP_READS = "./../experiments/" + EXP_NAME + "/sim_reads"
-EXP_BOWTIE = "./../experiments/" + EXP_NAME + "/bowtie"
+EXP_BOWTIE_1 = "./../experiments/" + EXP_NAME + "/bowtie1"
+EXP_BOWTIE_2 = "./../experiments/" + EXP_NAME + "/bowtie2"
 EXP_TRANS = "./../experiments/" + EXP_NAME + "/transcripts"
-BOWTIE = "/Users/matthewbernstein/Development/bowtie2-2.2.1"
+BOWTIE_1 = "/Users/matthewbernstein/Development/bowtie-1.0.1"
+BOWTIE_2 = "/Users/matthewbernstein/Development/bowtie2-2.2.1"
 MOUSE_TRANS = "./../data/NM_refseq_ref.transcripts.fa"
 
 # Create directory structure for the experiment
 call(["mkdir", EXP_ROOT])
 call(["mkdir", EXP_READS])
-call(["mkdir", EXP_BOWTIE])
+call(["mkdir", EXP_BOWTIE_2])
+call(["mkdir", EXP_BOWTIE_1])
 
 # Parse options
 parser = OptionParser()
@@ -42,8 +45,8 @@ tFile = MOUSE_TRANS
 rLength = 25
 preset = 1
 indels = "false"
-inserts = 2
-deletes = 2
+inserts = 1
+deletes = 1
 
 # Option to sample reference transcripts in order to simulate reads from smaller data
 if options.__dict__['sample']:
@@ -56,9 +59,16 @@ if options.__dict__['sample']:
 if options.__dict__['build']:
 	if os.path.isdir(EXP_TRANS):
 		tFile = "./../transcripts/" + EXP_NAME + "_ref.fa"
-	os.chdir(EXP_BOWTIE)
+	
+	# Build BowTie 2 Index
+	os.chdir(EXP_BOWTIE_2)
 	p = subprocess.Popen(["/Users/matthewbernstein/Development/bowtie2-2.2.1/bowtie2-build", tFile, EXP_NAME])
 	p.wait()
+
+	# Build BowTie 1 Index
+	os.chdir(PROJECT_ROOT + "experiments/" + EXP_NAME + "/bowtie1")
+        p = subprocess.Popen(["/Users/matthewbernstein/Development/bowtie-1.0.1/bowtie-build", tFile, EXP_NAME])
+        p.wait()
 
 # Option to set the length of the simulated reads
 if options.__dict__['r_length']:
@@ -100,11 +110,21 @@ if options.__dict__['align']:
 	else:
 		base = "NM"
 	
-	# Run bowtie
-	os.chdir(PROJECT_ROOT + "experiments/" + EXP_NAME + "/bowtie")
+	# Run bowtie 2
+	os.chdir(PROJECT_ROOT + "experiments/" + EXP_NAME + "/bowtie2")
+	print "BowTie 2 Alignment Results:"
 	p = subprocess.Popen(["/Users/matthewbernstein/Development/bowtie2-2.2.1/bowtie2", \
-		"--local", "--ma", str(10), "--score-min", "G,1,4",  "-k", "20", "-x", base, "-f", "-U", PROJECT_ROOT + "experiments/" + EXP_NAME  + "/sim_reads/" + EXP_NAME + "_reads.fa", \
-		"-S", PROJECT_ROOT + "experiments/" + EXP_NAME + "/sim_reads/" + EXP_NAME + "_align.txt"])
+		"--local", "--ma", str(10),  "-k", "20", "-x", base, "-f", "-U", PROJECT_ROOT + "experiments/" + EXP_NAME  + "/sim_reads/" + EXP_NAME + "_reads.fa", \
+		"-S", PROJECT_ROOT + "experiments/" + EXP_NAME + "/sim_reads/" + EXP_NAME + "_b2_align.txt"])
+	p.wait()
+
+	# Run bowtie 1
+	os.chdir(PROJECT_ROOT + "experiments/" + EXP_NAME + "/bowtie1")
+	print "BowTie 1 Alignment Results:"
+	p = subprocess.Popen(["/Users/matthewbernstein/Development/bowtie-1.0.1/bowtie", \
+                "-n", str(2), "-k", "20", "-f", base, PROJECT_ROOT + "experiments/" + EXP_NAME  + "/sim_reads/" + EXP_NAME + "_reads.fa", \
+                "-S", PROJECT_ROOT + "experiments/" + EXP_NAME + "/sim_reads/" + EXP_NAME + "_b1_align.txt"])
+	p.wait()
 
 # Option to run the RSEM algorithm
 if options.__dict__['rsem']:

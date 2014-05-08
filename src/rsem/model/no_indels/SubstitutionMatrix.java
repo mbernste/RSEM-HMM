@@ -3,7 +3,13 @@ package rsem.model.no_indels;
 import java.util.HashMap;
 import java.util.Map;
 
+import sequence.Read;
+import sequence.Reads;
+import sequence.Transcript;
+import sequence.Transcripts;
+
 import common.Common;
+import data.readers.Alignments;
 
 
 public class SubstitutionMatrix 
@@ -17,6 +23,76 @@ public class SubstitutionMatrix
 	 */
 	private Double[][][] values;
 		
+	public SubstitutionMatrix(Reads rs, Transcripts ts, Alignments aligns)
+	{
+		symbolIndices = new HashMap<Character, Integer>();
+		for (int i = 0; i < Common.DNA_ALPHABET.length; i++)
+		{
+			symbolIndices.put(Common.DNA_ALPHABET[i], i);
+		}
+		
+		int rLength = Common.readLength;
+		int aLength = Common.DNA_ALPHABET.length;
+		values = new Double[rLength][aLength][aLength];
+		for (int p = 0; p < rLength; p++)
+		{
+			for (int r = 0; r < aLength; r++)
+			{
+				for (int t = 0; t < aLength; t++)
+				{
+					values[p][r][t] = 1.0;
+				}
+			}
+		}
+		
+		for (Object[] o : aligns.getAlignments())
+		{	
+			String readId = (String) o[0];
+			String transId = (String) o[1];
+			Integer startPos = (Integer) o[2];
+			Boolean orientation = (Boolean) o[3];
+			
+			if (!aligns.getUniquelyMappingReads().contains(readId))
+			{
+				continue;
+			}
+			
+			Read r = rs.getRead(readId);
+			Transcript t = ts.getTranscript(transId);
+			
+			String rSeq = r.getSeq();
+			String tSeq = t.getSeq(); 
+			
+			if (orientation == Common.REVERSE_COMPLIMENT_ORIENTATION)
+			{	
+				tSeq = Common.reverseCompliment(tSeq);
+				int rcStartPos = tSeq.length() - (startPos + rSeq.length()); 		
+				
+				for (int i = 0; i < rSeq.length(); i++)
+				{	
+					char rSymbol = rSeq.charAt(i);
+					char tSymbol = tSeq.charAt(rcStartPos + i);
+					
+					values[i][symbolIndices.get(rSymbol)][symbolIndices.get(tSymbol)]++;
+				}
+			}
+			else if (orientation == Common.FORWARD_ORIENTATION)
+			{
+				for (int i = 0; i < rSeq.length(); i++)
+				{
+					char rSymbol = rSeq.charAt(i);
+					char tSymbol = tSeq.charAt(startPos + i);
+					
+					values[i][symbolIndices.get(rSymbol)][symbolIndices.get(tSymbol)]++;
+				}
+			}
+		}
+	
+		System.out.println(this);
+		
+		this.normalize();
+	}
+	
 	public SubstitutionMatrix()
 	{
 		symbolIndices = new HashMap<Character, Integer>();

@@ -33,7 +33,7 @@ public class TestHmmConstructBuilder
 		Transcript t = ts.getTranscript(0);
 		
 		HMMConstructBuilder builder = new HMMConstructBuilder();
-		HMMConstruct hmmC = builder.buildHMMConstruct(ts, aligns);		
+		HMMConstruct hmmC = builder.buildHMMConstruct(rs, ts, aligns);		
 				
 		String seq = rs.getRead("0").getSeq();
 				

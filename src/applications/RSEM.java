@@ -13,12 +13,14 @@ import pair.Pair;
 import rsem.model.ExpectedHiddenData;
 import rsem.model.ExpressionLevels;
 import rsem.model.no_indels.SubstitutionMatrix;
+import sequence.NoiseTranscript;
 import sequence.Read;
 import sequence.Reads;
 import sequence.Sequence;
 import sequence.SimulatedReads;
 import sequence.Transcript;
 import sequence.Transcripts;
+import test.Core;
 
 import data.readers.Alignments;
 import data.readers.FASTAReader;
@@ -31,8 +33,13 @@ public class RSEM
 	
 	private static final double EPSILON = 0.001;
 	
+	public static final String NOISE_ID = "NOISE";
+	
+	public static double averageTranscriptLength;
+	
 	public static void main(String[] args)
 	{	
+
 		SimulatedReads rs = FASTAReader.readSimulatedReads(args[0]);
 		MappingReader.recoverMapping(args[1], rs);
 		
@@ -44,15 +51,47 @@ public class RSEM
 															  ts, 
 															  false);
 		
-		SubstitutionMatrix pM = new SubstitutionMatrix();
+		/*
+		Core.TestKit kit = Core.getDummyTestKit();
+		
+		Transcripts ts = kit.transcripts();
+		Reads rs = kit.reads();
+		Alignments aligns = kit.alignments();
+		*/
+		
+		
+		
+		double sum = 0.0;
+		for (Sequence t : ts.getSequences())
+		{
+			sum += t.getSeq().length();
+		}
+		averageTranscriptLength = sum / ts.size();
+		
+		System.out.println("Average transcript length: " + averageTranscriptLength);
+		
+		
+		/*
+		 * Add the "noise-isophorm" and noise alignment
+		 */
+		ts.addSequence(new NoiseTranscript());
+		//for (String rId : aligns.getAllMappedReads())
+		//{
+		//	aligns.addAlignment(rId, "NOISE", 0, Common.FORWARD_ORIENTATION);
+		//}
+		
+		SubstitutionMatrix pM = new SubstitutionMatrix(rs, ts, aligns);
 		ExpressionLevels el = new ExpressionLevels(ts);
+		
+		System.out.println(el);
+		
 		
 		/*
 		 * Run RSEM
 		 */
 		ExpressionLevels result = RSEM.EM(rs, ts, aligns, el, pM);
 		
-		double sum = 0.0;
+		sum = 0.0;
 		for (Sequence t : ts.getSequences())
 		{
 			sum += result.getExpressionLevel(t.getId());
@@ -73,6 +112,7 @@ public class RSEM
 	{	
 		int numReadsAligned = 0;
 		Set<String> counted = new HashSet<String>();
+		
 		for (Object[] o : cAligns.getAlignments())
 		{
 			String readId = (String) o[0];
@@ -107,7 +147,7 @@ public class RSEM
 																	  z, 
 																	  numReadsAligned);
 			pEl = params.getFirst();
-			pM = params.getSecond();
+			//pM = params.getSecond();
 		
 			prevProbData = probData;
 			probData = probabilityOfData(rs, ts, cAligns, z, pEl, pM);	
@@ -150,6 +190,18 @@ public class RSEM
 			z.setValue(readId, transId, startPos, orientation, finalP);
 		}
 		
+		for (Sequence r : rs.getSequences())
+		{
+			/*
+			 * The noise transcript
+			 */
+			double pSequence = probabilityOfSequenceFromNoise();
+			double finalP = pSequence * (pEl.getExpressionLevel("NOISE") / 
+										 averageTranscriptLength);
+						
+			z.setValue(r.getId(), NoiseTranscript.NOISE_ID, 0, Common.FORWARD_ORIENTATION, finalP);
+		}
+		
 		/*
 		 *	Normalize 
 		 */
@@ -171,30 +223,10 @@ public class RSEM
 		{
 			String tId = s.getId();
 			double sumOverT = z.sumOverTranscript(tId);
-			pEl.setExpressionLevel(tId, sumOverT / numReadsAligned);
-		}
-		
-		/*
-		 *  Count occurrences of each pair of bases aligned at each position 
-		 *  of the read.  Also, count occurrence of each base appearing
-		 *  along the transcript where there is a read aligned. 
-		 */
-		SubstitutionMatrix pM = new SubstitutionMatrix();
-		for (int p = 0; p < Common.readLength; p++)
-		{
-			for (char t : Common.DNA_ALPHABET)
-			{
-				double total = z.countTranscriptBaseOccurrences(t, p);
-				
-				for (char r : Common.DNA_ALPHABET)
-				{
-					double numPairs = z.countAlignedBasePairs(r, t, p);
-					pM.setValue(r, t, p, (numPairs + 1) / (total + 4));
-				}
-			}
+			pEl.setExpressionLevel(tId, sumOverT / rs.size());
 		}
 						
-		return new Pair<ExpressionLevels, SubstitutionMatrix>(pEl, pM);
+		return new Pair<ExpressionLevels, SubstitutionMatrix>(pEl, null);
 	}
 	
 	public static double probabilityOfSequence(Read r, 
@@ -237,6 +269,16 @@ public class RSEM
 		return p;
 	}
 	
+	public static double probabilityOfSequenceFromNoise()
+	{
+		double prod = 1.0;
+		for (int i = 0; i < Common.readLength; i++)
+		{
+			prod *= 0.25;
+		}
+		return prod;
+	}
+	
 	private static double probabilityOfData(
 									 Reads rs, 
 									 Transcripts ts,
@@ -251,37 +293,47 @@ public class RSEM
 		 * probability of the data.
 		 */
 		Map<String, Double> pSequences = new HashMap<String, Double>();
-		for (Object[] o : cAligns.getAlignments())
+		for (Sequence r : rs.getSequences())
 		{
-			String readId = (String) o[0];
-			pSequences.put(readId, 0.0);
+			pSequences.put(r.getId(), 0.0);
 		}
 		
 		double p = 1.0;
 		
 		for (Object[] o : cAligns.getAlignments())
 		{
-			String readId = (String) o[0];
-			String transId = (String) o[1];
+			String rId = (String) o[0];
+			String tId = (String) o[1];
 			Integer startPos = (Integer) o[2];
-			Boolean orientation = (Boolean) o[3];
+			Boolean orient = (Boolean) o[3];
 			
-			double pSequence = probabilityOfSequence(rs.getRead(readId), 
-					 ts.getTranscript(transId),
+			double pSequence = probabilityOfSequence(rs.getRead(rId), 
+					 ts.getTranscript(tId),
 					 startPos,
-					 orientation,
+					 orient,
 					 pM);	
 			
-			double zVal = z.getValue(readId, transId, startPos, orientation);
+			
+			double zVal = z.getValue(rId, tId, startPos, orient);
 			
 			double partialCalculation = pSequence * zVal;
+						
+			pSequences.put(rId, pSequences.get(rId) + partialCalculation);
+		}
+		
+		for (Sequence r : rs.getSequences())
+		{
+			String rId = r.getId();
 			
-			pSequences.put(readId, pSequences.get(readId) + partialCalculation);
+			double pSequence = probabilityOfSequenceFromNoise();
+			double zVal = z.getValue(rId, "NOISE", 0, Common.FORWARD_ORIENTATION);
+			double partialCalculation = pSequence * zVal;
+			pSequences.put(rId, pSequences.get(rId) + partialCalculation);
 		}
 		
 		for (Double val : pSequences.values())
 		{
-			p += -Math.log(val);
+			p += Math.log(val);
 		}
 		
 		return p;
